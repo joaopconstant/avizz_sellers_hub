@@ -3,6 +3,7 @@
 #AI
 /.claude/
 /.agents/
+/.agent/
 
 # dependencies
 /node_modules
