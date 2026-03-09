@@ -54,7 +54,11 @@ function getDayStyle(day: CalendarDay, isSelected: boolean): string {
   return "hover:bg-muted";
 }
 
-export function ReportCalendar({ days, selectedDate, onSelectDate }: ReportCalendarProps) {
+export function ReportCalendar({
+  days,
+  selectedDate,
+  onSelectDate,
+}: ReportCalendarProps) {
   if (days.length === 0) return null;
 
   // Calcula quantos dias em branco antes do primeiro dia do mês
@@ -88,10 +92,10 @@ export function ReportCalendar({ days, selectedDate, onSelectDate }: ReportCalen
       </div>
 
       {/* Grade de dias */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-2">
         {cells.map((day, idx) => {
           if (!day) {
-            return <div key={`blank-${idx}`} className="aspect-square" />;
+            return <div key={`blank-${idx}`} className="h-20" />;
           }
 
           const isSelected = day.date === selectedDate;
@@ -103,9 +107,11 @@ export function ReportCalendar({ days, selectedDate, onSelectDate }: ReportCalen
               onClick={() => clickable && onSelectDate(day.date)}
               disabled={!clickable}
               className={cn(
-                "aspect-square rounded-md text-sm font-medium flex flex-col items-center justify-center relative transition-colors",
+                "h-20 w-full rounded-md text-sm font-medium flex flex-col items-center justify-center relative transition-colors",
                 getDayStyle(day, isSelected),
-                day.isToday && !isSelected && "ring-2 ring-primary/60 ring-offset-1",
+                day.isToday &&
+                  !isSelected &&
+                  "ring-2 ring-primary/60 ring-offset-1",
               )}
               title={
                 day.isHoliday
