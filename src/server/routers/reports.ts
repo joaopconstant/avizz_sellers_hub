@@ -47,6 +47,10 @@ export const reportsRouter = createTRPCRouter({
       }
 
       const parts = input.month.split("-").map(Number) as [number, number];
+      // Limites UTC para a query — relatórios são salvos como UTC midnight (Date.UTC)
+      const queryStart = new Date(Date.UTC(parts[0], parts[1] - 1, 1));
+      const queryEnd = new Date(Date.UTC(parts[0], parts[1], 1)); // início do próximo mês (exclusivo)
+      // Datas locais para iterar os dias e calcular dia-da-semana corretamente
       const monthStart = new Date(parts[0], parts[1] - 1, 1);
       const monthEnd = endOfMonth(monthStart);
       const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -55,15 +59,16 @@ export const reportsRouter = createTRPCRouter({
       const reports = await db.dailyReport.findMany({
         where: {
           user_id: targetUserId,
-          report_date: { gte: monthStart, lte: monthEnd },
+          report_date: { gte: queryStart, lt: queryEnd },
         },
       });
 
       return days.map((day) => {
         const dateStr = format(day, "yyyy-MM-dd");
+        // Extrai a data UTC diretamente do ISO string — evita offset de fuso horário
         const report =
           reports.find(
-            (r) => format(new Date(r.report_date), "yyyy-MM-dd") === dateStr,
+            (r) => r.report_date.toISOString().slice(0, 10) === dateStr,
           ) ?? null;
 
         return {
@@ -106,9 +111,12 @@ export const reportsRouter = createTRPCRouter({
       const userId = session.user.id;
 
       const parts = input.date.split("-").map(Number) as [number, number, number];
+      // Data em horário local — para validações de dia-da-semana e comparação com hoje
+      const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      // Data em UTC midnight — para armazenamento consistente com o restante do sistema
       const reportDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
 
-      if (isWeekend(reportDate)) {
+      if (isWeekend(localDate)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Não é possível preencher relatório para finais de semana.",
@@ -116,7 +124,7 @@ export const reportsRouter = createTRPCRouter({
       }
 
       const today = startOfDay(new Date());
-      if (startOfDay(reportDate) > today) {
+      if (startOfDay(localDate) > today) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Não é possível preencher relatório para datas futuras.",
