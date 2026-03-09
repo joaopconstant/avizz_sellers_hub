@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, addMonths, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -45,34 +45,59 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
     userId: targetUserId !== userId ? targetUserId : undefined,
   });
 
-  const selectedDay = days?.find((d) => d.date === selectedDate) ?? null;
+  // Stable handlers — functional setters allow empty dep arrays (rule 5.5)
+  const handlePrevMonth = useCallback(() => {
+    setCurrentMonth((m) => format(subMonths(parseISO(`${m}-01`), 1), "yyyy-MM"));
+    setSelectedDate(null);
+  }, []);
 
+  const handleNextMonth = useCallback(() => {
+    setCurrentMonth((m) => format(addMonths(parseISO(`${m}-01`), 1), "yyyy-MM"));
+    setSelectedDate(null);
+  }, []);
+
+  const handleSelectDate = useCallback((date: string) => {
+    setSelectedDate((prev) => (prev === date ? null : date));
+  }, []);
+
+  const handleUserChange = useCallback((v: string) => {
+    setTargetUserId(v);
+    setSelectedDate(null);
+  }, []);
+
+  const handleFormSuccessClear = useCallback(() => {
+    setSelectedDate(null);
+  }, []);
+
+  const handleFormSuccessNoop = useCallback(() => {
+    // mantém a seleção para feedback visual após salvar
+  }, []);
+
+  // Memoized derivations that iterate arrays (rule 5.5 + 7.6)
+  const pendingCount = useMemo(
+    () => days?.filter((d) => d.isPending).length ?? 0,
+    [days],
+  );
+
+  const selectedDay = useMemo(
+    () => days?.find((d) => d.date === selectedDate) ?? null,
+    [days, selectedDate],
+  );
+
+  const targetUser = useMemo(
+    () => (canViewOthers ? users?.find((u) => u.id === targetUserId) : null),
+    [canViewOthers, users, targetUserId],
+  );
+
+  // targetRole — simple property read, no memo needed (rule 5.3)
+  const targetRole: UserRole = targetUser?.role ?? role;
+
+  // monthLabel — fast string derivation, no memo needed (rule 5.3)
   const monthLabel = format(
     parseISO(`${currentMonth}-01`),
     "MMMM 'de' yyyy",
     { locale: ptBR },
   );
-
-  const handlePrevMonth = () => {
-    setCurrentMonth((m) => format(subMonths(parseISO(`${m}-01`), 1), "yyyy-MM"));
-    setSelectedDate(null);
-  };
-
-  const handleNextMonth = () => {
-    setCurrentMonth((m) => format(addMonths(parseISO(`${m}-01`), 1), "yyyy-MM"));
-    setSelectedDate(null);
-  };
-
-  const handleSelectDate = (date: string) => {
-    setSelectedDate((prev) => (prev === date ? null : date));
-  };
-
-  // Determina o role do usuário alvo (para mostrar campos corretos no form)
-  const targetUser = canViewOthers ? users?.find((u) => u.id === targetUserId) : null;
-  const targetRole: UserRole = targetUser?.role ?? role;
-
-  // Conta pendências no mês
-  const pendingCount = days?.filter((d) => d.isPending).length ?? 0;
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -88,14 +113,11 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Seletor de usuário — admin/head apenas */}
-          {canViewOthers && users && (
+          {/* Seletor de usuário — admin/head apenas; guard de length evita Select vazio (rule 6.8) */}
+          {canViewOthers && users && users.length > 0 && (
             <Select
               value={targetUserId}
-              onValueChange={(v) => {
-                setTargetUserId(v);
-                setSelectedDate(null);
-              }}
+              onValueChange={handleUserChange}
             >
               <SelectTrigger className="w-48 h-8 text-xs">
                 <SelectValue placeholder="Selecionar usuário" />
@@ -157,7 +179,7 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
                 role={targetRole}
                 existingReport={null}
                 isReadOnly={!isViewingOwn}
-                onSuccess={() => setSelectedDate(null)}
+                onSuccess={handleFormSuccessClear}
               />
             </div>
           ) : (
@@ -166,9 +188,7 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
               role={targetRole}
               existingReport={selectedDay?.report ?? null}
               isReadOnly={!isViewingOwn}
-              onSuccess={() => {
-                // mantém a seleção para feedback visual
-              }}
+              onSuccess={handleFormSuccessNoop}
             />
           )}
         </Card>

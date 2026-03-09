@@ -1,18 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatPercent(value: number): string {
-  return (value * 100).toFixed(1) + "%";
-}
+import { formatCurrency, formatPercent } from "@/lib/formatting";
 
 function GoalBar({
   label,

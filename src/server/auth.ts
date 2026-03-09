@@ -41,26 +41,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return false;
         }
 
-        let user = await db.user.findUnique({
+        // Usuário deve ser pré-cadastrado por um admin antes do primeiro login.
+        // Se não existir ou estiver inativo, acesso negado. (CLAUDE.md — Autenticação)
+        const user = await db.user.findUnique({
           where: { email },
-          select: { id: true, is_active: true },
+          select: { is_active: true },
         });
 
-        if (!user) {
-          user = await db.user.create({
-            data: {
-              email,
-              name: profile?.name ?? email.split("@")[0],
-              avatar_url: (profile?.picture as string) ?? null,
-              company_id: "avizz",
-              role: "operational",
-              is_active: true,
-            },
-            select: { id: true, is_active: true },
-          });
-        }
-
-        if (!user.is_active) {
+        if (!user || !user.is_active) {
           return false;
         }
       }

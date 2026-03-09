@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 type CalendarDay = {
@@ -50,32 +51,36 @@ function getDayStyle(day: CalendarDay, isSelected: boolean): string {
   if (day.isPending) {
     return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60";
   }
-  // workday, no report, today or past but not pending? (shouldn't happen, but default)
   return "hover:bg-muted";
 }
 
-export function ReportCalendar({
+// Hoisted to module level — captures no component state (rule 6.3)
+function isClickable(day: CalendarDay): boolean {
+  return !day.isWeekend && !day.isFuture;
+}
+
+export const ReportCalendar = memo(function ReportCalendar({
   days,
   selectedDate,
   onSelectDate,
 }: ReportCalendarProps) {
+  // Memoize grid computation — depends only on days array reference (rule 5.5)
+  const cells = useMemo<(CalendarDay | null)[]>(() => {
+    if (days.length === 0) return [];
+    const firstDay = days[0]!;
+    const leadingBlanks = mondayFirst(firstDay.dayOfWeek);
+    const result: (CalendarDay | null)[] = [
+      ...Array.from({ length: leadingBlanks }, () => null),
+      ...days,
+    ];
+    const trailingBlanks = (7 - (result.length % 7)) % 7;
+    for (let i = 0; i < trailingBlanks; i++) {
+      result.push(null);
+    }
+    return result;
+  }, [days]);
+
   if (days.length === 0) return null;
-
-  // Calcula quantos dias em branco antes do primeiro dia do mês
-  const firstDay = days[0]!;
-  const leadingBlanks = mondayFirst(firstDay.dayOfWeek);
-  const cells: (CalendarDay | null)[] = [
-    ...Array.from({ length: leadingBlanks }, () => null),
-    ...days,
-  ];
-
-  // Preenche até completar a última semana
-  const trailingBlanks = (7 - (cells.length % 7)) % 7;
-  for (let i = 0; i < trailingBlanks; i++) {
-    cells.push(null);
-  }
-
-  const isClickable = (day: CalendarDay) => !day.isWeekend && !day.isFuture;
 
   return (
     <div className="select-none">
@@ -156,4 +161,4 @@ export function ReportCalendar({
       </div>
     </div>
   );
-}
+});
