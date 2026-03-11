@@ -1,4 +1,4 @@
-import { isWeekend, startOfDay, format } from "date-fns";
+import { isWeekend, startOfDay, format, getDaysInMonth, startOfMonth } from "date-fns";
 
 /**
  * Feriados nacionais BR — MVP 2025–2026.
@@ -49,6 +49,23 @@ export function isHoliday(date: Date): boolean {
  * NÃO verifica se o relatório foi preenchido — isso é responsabilidade do chamador.
  * RN-07 + RN-08
  */
+/**
+ * Retorna todos os dias úteis (não fim de semana, não feriado) de um mês.
+ * `month` deve ser o primeiro dia do mês.
+ */
+export function getWorkdaysInMonth(month: Date): Date[] {
+  const start = startOfMonth(month);
+  const total = getDaysInMonth(start);
+  const result: Date[] = [];
+  for (let d = 1; d <= total; d++) {
+    const date = new Date(start.getFullYear(), start.getMonth(), d);
+    if (!isWeekend(date) && !isHoliday(date)) {
+      result.push(date);
+    }
+  }
+  return result;
+}
+
 export function isPendingDay(date: Date, today: Date): boolean {
   const d = startOfDay(date);
   const t = startOfDay(today);

@@ -1,17 +1,15 @@
 import { auth } from "@/server/auth";
+import { redirect } from "next/navigation";
+import { DashboardClient } from "./dashboard-client";
 
 export default async function DashboardPage() {
   const session = await auth();
+  if (!session?.user) redirect("/login");
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
-      <p className="text-muted-foreground">
-        Bem-vindo, {session?.user?.name}!
-      </p>
-      <p className="text-sm text-muted-foreground mt-1">
-        Role: <span className="font-medium">{session?.user?.role}</span>
-      </p>
-    </div>
+    <DashboardClient
+      role={session.user.role}
+      name={session.user.name ?? ""}
+    />
   );
 }
