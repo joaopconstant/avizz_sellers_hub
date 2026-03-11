@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 type CalendarDay = {
   date: string;
   dayOfMonth: number;
-  dayOfWeek: number; // 0=Dom..6=Sáb
-  isWeekend: boolean;
+  dayOfWeek: number;
   isHoliday: boolean;
   isToday: boolean;
   isFuture: boolean;
@@ -21,20 +20,11 @@ type ReportCalendarProps = {
   onSelectDate: (date: string) => void;
 };
 
-// Segunda-feira primeiro: Seg=0, Ter=1, ..., Dom=6
-const WEEK_HEADERS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-
-function mondayFirst(dayOfWeek: number): number {
-  // getDay(): 0=Dom..6=Sáb → converte para 0=Seg..6=Dom
-  return (dayOfWeek + 6) % 7;
-}
+const WEEK_HEADERS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function getDayStyle(day: CalendarDay, isSelected: boolean): string {
   if (isSelected) {
     return "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1";
-  }
-  if (day.isWeekend) {
-    return "text-muted-foreground/50 cursor-default";
   }
   if (day.isFuture) {
     return "text-muted-foreground/50 cursor-default";
@@ -56,7 +46,7 @@ function getDayStyle(day: CalendarDay, isSelected: boolean): string {
 
 // Hoisted to module level — captures no component state (rule 6.3)
 function isClickable(day: CalendarDay): boolean {
-  return !day.isWeekend && !day.isFuture;
+  return !day.isFuture;
 }
 
 export const ReportCalendar = memo(function ReportCalendar({
@@ -68,7 +58,7 @@ export const ReportCalendar = memo(function ReportCalendar({
   const cells = useMemo<(CalendarDay | null)[]>(() => {
     if (days.length === 0) return [];
     const firstDay = days[0]!;
-    const leadingBlanks = mondayFirst(firstDay.dayOfWeek);
+    const leadingBlanks = firstDay.dayOfWeek;
     const result: (CalendarDay | null)[] = [
       ...Array.from({ length: leadingBlanks }, () => null),
       ...days,
@@ -131,10 +121,6 @@ export const ReportCalendar = memo(function ReportCalendar({
               }
             >
               {day.dayOfMonth}
-              {/* Indicador de ponto no rodapé da célula */}
-              {day.isPending && !isSelected && (
-                <span className="absolute bottom-1 size-1 rounded-full bg-red-500" />
-              )}
             </button>
           );
         })}

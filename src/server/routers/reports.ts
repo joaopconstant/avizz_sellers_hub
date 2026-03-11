@@ -1,9 +1,19 @@
 import { TRPCError } from "@trpc/server";
-import { endOfMonth, eachDayOfInterval, format, isWeekend, isSameDay, startOfDay } from "date-fns";
+import {
+  endOfMonth,
+  eachDayOfInterval,
+  format,
+  isSameDay,
+  startOfDay,
+} from "date-fns";
 import { z } from "zod";
 
 import { isPendingDay, isHoliday } from "@/lib/workdays";
-import { adminOrHeadProcedure, createTRPCRouter, salesProcedure } from "@/server/trpc";
+import {
+  adminOrHeadProcedure,
+  createTRPCRouter,
+  salesProcedure,
+} from "@/server/trpc";
 
 const reportInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -75,7 +85,6 @@ export const reportsRouter = createTRPCRouter({
           date: dateStr,
           dayOfMonth: day.getDate(),
           dayOfWeek: day.getDay(), // 0=Dom..6=Sáb
-          isWeekend: isWeekend(day),
           isHoliday: isHoliday(day),
           isToday: isSameDay(day, today),
           isFuture: startOfDay(day) > today,
@@ -110,18 +119,15 @@ export const reportsRouter = createTRPCRouter({
       const { session, db } = ctx;
       const userId = session.user.id;
 
-      const parts = input.date.split("-").map(Number) as [number, number, number];
+      const parts = input.date.split("-").map(Number) as [
+        number,
+        number,
+        number,
+      ];
       // Data em horário local — para validações de dia-da-semana e comparação com hoje
       const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
       // Data em UTC midnight — para armazenamento consistente com o restante do sistema
       const reportDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-
-      if (isWeekend(localDate)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Não é possível preencher relatório para finais de semana.",
-        });
-      }
 
       const today = startOfDay(new Date());
       if (startOfDay(localDate) > today) {
@@ -144,7 +150,9 @@ export const reportsRouter = createTRPCRouter({
         work_location: input.work_location,
         calls_total: isDayOff ? null : (input.calls_total ?? null),
         calls_answered: isDayOff ? null : (input.calls_answered ?? null),
-        meetings_scheduled: isDayOff ? null : (input.meetings_scheduled ?? null),
+        meetings_scheduled: isDayOff
+          ? null
+          : (input.meetings_scheduled ?? null),
         meetings_held: isDayOff ? null : (input.meetings_held ?? null),
         crm_activities: isDayOff ? null : (input.crm_activities ?? null),
         bot_conversations: isDayOff ? null : (input.bot_conversations ?? null),
