@@ -5,9 +5,8 @@ import { formatCurrency, formatInteger } from "@/lib/formatting";
 interface ProjectionBoxesProps {
   cashRealized: number;
   cashProjected: number;
-  netRealized: number;
-  futureRevenue: number;
-  salesCount: number;
+  cashGoal: number | null;
+  advancesValue: number;
   workdaysElapsed: number;
   workdaysTotal: number;
 }
@@ -16,19 +15,13 @@ function KpiBox({
   label,
   value,
   sub,
-  highlight,
 }: {
   label: string;
   value: string;
   sub?: string;
-  highlight?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-lg border p-4 space-y-1 ${
-        highlight ? "bg-primary/5 border-primary/20" : "bg-card"
-      }`}
-    >
+    <div className={`rounded-lg border p-4 space-y-1`}>
       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
         {label}
       </p>
@@ -41,31 +34,46 @@ function KpiBox({
 export function ProjectionBoxes({
   cashRealized,
   cashProjected,
-  netRealized,
-  futureRevenue,
-  salesCount,
+  cashGoal,
+  advancesValue,
   workdaysElapsed,
   workdaysTotal,
 }: ProjectionBoxesProps) {
+  const dailyRate = workdaysElapsed > 0 ? cashRealized / workdaysElapsed : 0;
+  const remaining =
+    cashGoal != null ? Math.max(0, cashGoal - cashRealized) : null;
+  const workdaysLeft = workdaysTotal - workdaysElapsed;
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-      <KpiBox label="Caixa Realizado" value={formatCurrency(cashRealized)} />
       <KpiBox
-        label="Projeção Caixa"
+        label="Projeção"
         value={formatCurrency(cashProjected)}
         sub={`Baseado em ${workdaysElapsed}/${workdaysTotal} dias úteis`}
-        highlight
-      />
-      <KpiBox label="Receita Líquida" value={formatCurrency(netRealized)} />
-      <KpiBox
-        label="Receita Futura"
-        value={formatCurrency(futureRevenue)}
-        sub="Parcelas a receber"
       />
       <KpiBox
-        label="Vendas Realizadas"
-        value={formatInteger(salesCount)}
-        sub="Contratos válidos"
+        label="/dia"
+        value={formatCurrency(dailyRate)}
+        sub={`Média sobre ${workdaysElapsed} dia${workdaysElapsed !== 1 ? "s" : ""} útil${workdaysElapsed !== 1 ? "s" : ""}`}
+      />
+      <KpiBox
+        label="Faltam"
+        value={remaining != null ? formatCurrency(remaining) : "—"}
+        sub={
+          cashGoal != null
+            ? `Meta: ${formatCurrency(cashGoal)}`
+            : "Meta não definida"
+        }
+      />
+      <KpiBox
+        label="Dias"
+        value={formatInteger(workdaysLeft)}
+        sub={`${workdaysLeft} dia${workdaysLeft !== 1 ? "s" : ""} útil${workdaysLeft !== 1 ? "s" : ""} restante${workdaysLeft !== 1 ? "s" : ""}`}
+      />
+      <KpiBox
+        label="Na mesa"
+        value={formatCurrency(advancesValue)}
+        sub="Avanços em aberto"
       />
     </div>
   );

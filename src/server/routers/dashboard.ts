@@ -160,7 +160,7 @@ export const dashboardRouter = createTRPCRouter({
       const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
       const monthStart = startOfMonth(startDate);
 
-      const [sales, activeAdvances, goal] = await Promise.all([
+      const [sales, advancesAgg, goal] = await Promise.all([
         db.sale.findMany({
           where: { sale_date: { gte: startDate, lte: endDate } },
           select: {
@@ -172,8 +172,10 @@ export const dashboardRouter = createTRPCRouter({
             sdr_id: true,
           },
         }),
-        db.advance.count({
+        db.advance.aggregate({
           where: { is_converted: false },
+          _sum: { estimated_value: true },
+          _count: { _all: true },
         }),
         db.goal.findFirst({
           where: { month: monthStart },
@@ -215,7 +217,8 @@ export const dashboardRouter = createTRPCRouter({
         futureRevenue,
         salesCount,
         cashProjected,
-        activeAdvances,
+        activeAdvances: advancesAgg._count._all,
+        advancesValue: Number(advancesAgg._sum.estimated_value ?? 0),
         cashGoal: goal ? Number(goal.cash_goal) : null,
         salesGoal: goal ? goal.sales_goal : null,
         myCashRealized,

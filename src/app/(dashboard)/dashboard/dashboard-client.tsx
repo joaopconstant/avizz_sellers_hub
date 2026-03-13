@@ -41,13 +41,19 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
   const fromStr = format(dateRange.from, "yyyy-MM-dd");
   const toStr = format(dateRange.to, "yyyy-MM-dd");
 
-  const summary = api.dashboard.getSummary.useQuery({ from: fromStr, to: toStr });
+  const summary = api.dashboard.getSummary.useQuery({
+    from: fromStr,
+    to: toStr,
+  });
   const funnel = api.dashboard.getFunnel.useQuery({
     from: fromStr,
     to: toStr,
     userId: funnelUserId ?? undefined,
   });
-  const rankings = api.dashboard.getRankings.useQuery({ from: fromStr, to: toStr });
+  const rankings = api.dashboard.getRankings.useQuery({
+    from: fromStr,
+    to: toStr,
+  });
   const insights = api.dashboard.getInsights.useQuery(
     { from: fromStr, to: toStr },
     { enabled: isAdminOrHead(role) },
@@ -64,15 +70,20 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
     () =>
       isAdminOrHead(role) && rankings.data
         ? [
-            ...rankings.data.closers.map((c) => ({ userId: c.userId, name: c.name })),
-            ...rankings.data.sdrs.map((u) => ({ userId: u.userId, name: u.name })),
+            ...rankings.data.closers.map((c) => ({
+              userId: c.userId,
+              name: c.name,
+            })),
+            ...rankings.data.sdrs.map((u) => ({
+              userId: u.userId,
+              name: u.name,
+            })),
           ]
         : undefined,
     [rankings.data, role],
   );
 
-  const isLoading =
-    summary.isLoading || funnel.isLoading || rankings.isLoading;
+  const isLoading = summary.isLoading || funnel.isLoading || rankings.isLoading;
 
   if (isLoading) {
     return (
@@ -142,9 +153,8 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
       <ProjectionBoxes
         cashRealized={s.cashRealized}
         cashProjected={s.cashProjected}
-        netRealized={s.netRealized}
-        futureRevenue={s.futureRevenue}
-        salesCount={s.salesCount}
+        cashGoal={s.cashGoal}
+        advancesValue={s.advancesValue}
         workdaysElapsed={s.workdaysElapsed}
         workdaysTotal={s.workdaysTotal}
       />
@@ -181,10 +191,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
 
       {/* Row 5: Insights (admin/head) */}
       {isAdminOrHead(role) && insights.data && (
-        <InsightsSection
-          data={insights.data}
-          onOpenInsight={setInsightType}
-        />
+        <InsightsSection data={insights.data} onOpenInsight={setInsightType} />
       )}
 
       <ColaboradorModal
