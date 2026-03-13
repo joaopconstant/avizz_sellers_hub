@@ -14,10 +14,10 @@ import {
 } from "date-fns";
 import { getWorkdaysInMonth } from "@/lib/workdays";
 
-const monthInput = z
-  .string()
-  .optional()
-  .transform((v) => (v ? new Date(v) : startOfMonth(new Date())));
+const rangeInput = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+});
 
 export const dashboardRouter = createTRPCRouter({
   // ─── Mini-painel sidebar (existente) ────────────────────────────────────────
@@ -122,13 +122,13 @@ export const dashboardRouter = createTRPCRouter({
 
   // ─── Resumo global do mês ───────────────────────────────────────────────────
   getSummary: dashboardGlobalProcedure
-    .input(z.object({ month: monthInput }).optional())
+    .input(rangeInput.optional())
     .query(async ({ ctx, input }) => {
       const { session, db } = ctx;
       const role = session.user.role;
       const userId = session.user.id;
-      const startDate = input?.month ?? startOfMonth(new Date());
-      const endDate = endOfMonth(startDate);
+      const startDate = input?.from ? new Date(input.from) : startOfMonth(new Date());
+      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
 
       const [sales, activeAdvances, goal] = await Promise.all([
         db.sale.findMany({
@@ -146,7 +146,7 @@ export const dashboardRouter = createTRPCRouter({
           where: { is_converted: false },
         }),
         db.goal.findFirst({
-          where: { month: startDate },
+          where: { month: startOfMonth(startDate) },
         }),
       ]);
 
@@ -156,7 +156,7 @@ export const dashboardRouter = createTRPCRouter({
       const salesCount = sales.filter((x) => x.counts_as_sale).length;
 
       // Projeção de caixa baseada em dias úteis
-      const workdays = getWorkdaysInMonth(startDate);
+      const workdays = getWorkdaysInMonth(startOfMonth(startDate));
       const today = startOfDay(new Date());
       const elapsed = workdays.filter((d) => !isAfter(d, today)).length;
       const cashProjected =
@@ -193,15 +193,24 @@ export const dashboardRouter = createTRPCRouter({
 
   // ─── Funil de conversão ─────────────────────────────────────────────────────
   getFunnel: dashboardGlobalProcedure
-    .input(z.object({ month: monthInput }).optional())
+    .input(rangeInput.extend({ userId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const startDate = input?.month ?? startOfMonth(new Date());
-      const endDate = endOfMonth(startDate);
+      const { db, session } = ctx;
+      const startDate = input?.from ? new Date(input.from) : startOfMonth(new Date());
+      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
+      const role = session.user.role;
+
+      const canFilterUser = role === "admin" || role === "head";
+      const userFilter =
+        input?.userId && canFilterUser ? { user_id: input.userId } : {};
+      const saleUserFilter =
+        input?.userId && canFilterUser
+          ? { OR: [{ closer_id: input.userId }, { sdr_id: input.userId }] }
+          : {};
 
       const [reports, salesCount] = await Promise.all([
         db.dailyReport.findMany({
-          where: { report_date: { gte: startDate, lte: endDate } },
+          where: { report_date: { gte: startDate, lte: endDate }, ...userFilter },
           select: {
             calls_total: true,
             calls_answered: true,
@@ -213,6 +222,7 @@ export const dashboardRouter = createTRPCRouter({
           where: {
             sale_date: { gte: startDate, lte: endDate },
             counts_as_sale: true,
+            ...saleUserFilter,
           },
         }),
       ]);
@@ -256,11 +266,11 @@ export const dashboardRouter = createTRPCRouter({
 
   // ─── Rankings ───────────────────────────────────────────────────────────────
   getRankings: dashboardGlobalProcedure
-    .input(z.object({ month: monthInput }).optional())
+    .input(rangeInput.optional())
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const startDate = input?.month ?? startOfMonth(new Date());
-      const endDate = endOfMonth(startDate);
+      const startDate = input?.from ? new Date(input.from) : startOfMonth(new Date());
+      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
 
       // Closers e SDRs ativos
       const [closers, sdrs, sales, individualGoals, reports] = await Promise.all([
@@ -282,7 +292,7 @@ export const dashboardRouter = createTRPCRouter({
           },
         }),
         db.individualGoal.findMany({
-          where: { goal: { month: startDate } },
+          where: { goal: { month: startOfMonth(startDate) } },
           select: { user_id: true, cash_goal: true },
         }),
         db.dailyReport.findMany({
@@ -340,11 +350,11 @@ export const dashboardRouter = createTRPCRouter({
 
   // ─── Detalhes do colaborador (modal) ────────────────────────────────────────
   getColaboradorDetail: dashboardGlobalProcedure
-    .input(z.object({ userId: z.string(), month: monthInput }))
+    .input(z.object({ userId: z.string(), from: z.string(), to: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const startDate = startOfMonth(input.month);
-      const endDate = endOfMonth(input.month);
+      const startDate = new Date(input.from);
+      const endDate = new Date(input.to);
 
       const [user, sales, reports] = await Promise.all([
         db.user.findUnique({
@@ -436,11 +446,11 @@ export const dashboardRouter = createTRPCRouter({
 
   // ─── Insights (admin/head) ──────────────────────────────────────────────────
   getInsights: adminOrHeadProcedure
-    .input(z.object({ month: monthInput }).optional())
+    .input(rangeInput.optional())
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const startDate = input?.month ?? startOfMonth(new Date());
-      const endDate = endOfMonth(startDate);
+      const startDate = input?.from ? new Date(input.from) : startOfMonth(new Date());
+      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
 
       // Busca MoM (6 meses) + mês atual em query única
       const momWindowStart = startOfMonth(subMonths(startDate, 5));

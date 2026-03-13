@@ -1,24 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { startOfMonth, format } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { api } from "@/trpc/react";
-import { MonthPicker } from "@/components/dashboard/MonthPicker";
+import { DateRangePicker } from "@/components/dashboard/DateRangePicker";
 import { RankingsSection } from "@/components/dashboard/RankingsSection";
 import { ColaboradorModal } from "@/components/dashboard/ColaboradorModal";
 
 export function RankingsClient() {
-  const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
-  const monthStr = format(month, "yyyy-MM-dd");
-  const { data, isLoading } = api.dashboard.getRankings.useQuery({ month: monthStr });
+  const fromStr = format(dateRange.from, "yyyy-MM-dd");
+  const toStr = format(dateRange.to, "yyyy-MM-dd");
+  const { data, isLoading } = api.dashboard.getRankings.useQuery({ from: fromStr, to: toStr });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Ranking de Vendas</h1>
-        <MonthPicker month={month} onChange={setMonth} />
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {isLoading ? (
@@ -38,7 +43,8 @@ export function RankingsClient() {
 
       <ColaboradorModal
         userId={selectedUser}
-        month={month}
+        from={dateRange.from}
+        to={dateRange.to}
         onClose={() => setSelectedUser(null)}
       />
     </div>

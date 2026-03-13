@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { startOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 import { format } from "date-fns";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ModernTvIcon } from "@hugeicons/core-free-icons";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { MonthPicker } from "@/components/dashboard/MonthPicker";
+import { DateRangePicker } from "@/components/dashboard/DateRangePicker";
 import { MetaSection } from "@/components/dashboard/MetaSection";
 import { ProjectionBoxes } from "@/components/dashboard/ProjectionBoxes";
 import { FunnelSection } from "@/components/dashboard/FunnelSection";
@@ -29,18 +29,27 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ role, name }: DashboardClientProps) {
-  const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [funnelUserId, setFunnelUserId] = useState<string | null>(null);
   const [insightType, setInsightType] = useState<InsightType | null>(null);
   const [tvMode, setTvMode] = useState(false);
 
-  const monthStr = format(month, "yyyy-MM-dd");
+  const fromStr = format(dateRange.from, "yyyy-MM-dd");
+  const toStr = format(dateRange.to, "yyyy-MM-dd");
 
-  const summary = api.dashboard.getSummary.useQuery({ month: monthStr });
-  const funnel = api.dashboard.getFunnel.useQuery({ month: monthStr });
-  const rankings = api.dashboard.getRankings.useQuery({ month: monthStr });
+  const summary = api.dashboard.getSummary.useQuery({ from: fromStr, to: toStr });
+  const funnel = api.dashboard.getFunnel.useQuery({
+    from: fromStr,
+    to: toStr,
+    userId: funnelUserId ?? undefined,
+  });
+  const rankings = api.dashboard.getRankings.useQuery({ from: fromStr, to: toStr });
   const insights = api.dashboard.getInsights.useQuery(
-    { month: monthStr },
+    { from: fromStr, to: toStr },
     { enabled: isAdminOrHead(role) },
   );
 
@@ -92,6 +101,13 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
     salesCount: 0,
   }));
 
+  const funnelUsers = isAdminOrHead(role)
+    ? [
+        ...rankings.data.closers.map((c) => ({ userId: c.userId, name: c.name })),
+        ...rankings.data.sdrs.map((u) => ({ userId: u.userId, name: u.name })),
+      ]
+    : undefined;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -100,7 +116,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
           <p className="text-sm text-muted-foreground">Bem-vindo, {name}!</p>
         </div>
         <div className="flex items-center gap-2">
-          <MonthPicker month={month} onChange={setMonth} />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Button variant="outline" size="sm" onClick={() => setTvMode(true)}>
             <HugeiconsIcon icon={ModernTvIcon} size={16} className="mr-1.5" />
             TV
@@ -133,7 +149,12 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
       {isAdminOrHead(role) ? (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
           <div className="lg:col-span-2 flex flex-col">
-            <FunnelSection stages={funnel.data} />
+            <FunnelSection
+              stages={funnel.data}
+              users={funnelUsers}
+              selectedUserId={funnelUserId}
+              onSelectUser={setFunnelUserId}
+            />
           </div>
           <div className="lg:col-span-3 flex flex-col">
             <MetaVsEntregueTable
@@ -164,7 +185,8 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
 
       <ColaboradorModal
         userId={selectedUser}
-        month={month}
+        from={dateRange.from}
+        to={dateRange.to}
         onClose={() => setSelectedUser(null)}
       />
 
@@ -176,7 +198,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
 
       {tvMode && (
         <TVModeView
-          month={month}
+          month={dateRange.from}
           summary={summary.data!}
           funnel={funnel.data!}
           rankings={rankings.data!}

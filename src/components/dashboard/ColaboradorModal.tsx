@@ -23,13 +23,18 @@ import { ptBR } from "date-fns/locale";
 
 interface ColaboradorModalProps {
   userId: string | null;
-  month: Date;
+  from: Date;
+  to: Date;
   onClose: () => void;
 }
 
-export function ColaboradorModal({ userId, month, onClose }: ColaboradorModalProps) {
+export function ColaboradorModal({ userId, from, to, onClose }: ColaboradorModalProps) {
   const { data, isLoading } = api.dashboard.getColaboradorDetail.useQuery(
-    { userId: userId ?? "", month: month.toISOString().slice(0, 10) },
+    {
+      userId: userId ?? "",
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    },
     { enabled: !!userId },
   );
 
