@@ -12,46 +12,56 @@ interface FunnelSectionProps {
   stages: FunnelStage[];
 }
 
+const MIN_BAR_PCT = 15;
+
 export function FunnelSection({ stages }: FunnelSectionProps) {
   const maxCount = Math.max(...stages.map((s) => s.count), 1);
 
   return (
-    <div className="rounded-lg border bg-card p-5 space-y-4">
+    <div className="rounded-lg border bg-card p-5 space-y-3">
       <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         Funil de Conversão
       </h2>
 
-      <div className="flex items-end gap-2">
+      <div className="flex flex-col gap-1.5">
         {stages.map((stage, idx) => {
-          const pct = (stage.count / maxCount) * 100;
+          const rawPct = (stage.count / maxCount) * 100;
+          const barPct = Math.max(rawPct, MIN_BAR_PCT);
           const isLast = idx === stages.length - 1;
 
           return (
-            <div key={stage.label} className="flex-1 flex flex-col items-center gap-1">
-              {/* Conversion badge */}
+            <div key={stage.label}>
+              {/* Conversion arrow between stages */}
               {stage.conversionFromPrev !== null && (
-                <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                  {stage.conversionFromPrev.toFixed(1)}%
-                </span>
+                <div className="flex items-center gap-2 py-0.5 pl-2">
+                  <span className="text-muted-foreground text-xs">↓</span>
+                  <span className="text-xs text-muted-foreground">
+                    {stage.conversionFromPrev.toFixed(1)}% de conversão
+                  </span>
+                </div>
               )}
 
-              {/* Bar */}
-              <div className="w-full flex flex-col items-center">
-                <p className="text-sm font-bold mb-1">{formatInteger(stage.count)}</p>
-                <div className="w-full bg-muted rounded-t overflow-hidden" style={{ height: 80 }}>
+              {/* Funnel bar row */}
+              <div className="flex items-center gap-3">
+                {/* Label fixed width */}
+                <span className="text-xs text-muted-foreground w-28 shrink-0 text-right leading-tight">
+                  {stage.label}
+                </span>
+
+                {/* Bar + count */}
+                <div className="flex-1 flex items-center gap-2">
                   <div
-                    className={`w-full rounded-t transition-all duration-500 ${
+                    className={`h-8 rounded transition-all duration-500 flex items-center justify-end pr-2 ${
                       isLast ? "bg-primary" : "bg-primary/60"
                     }`}
-                    style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
-                  />
+                    style={{ width: `${barPct}%` }}
+                  >
+                    <span className="text-xs font-bold text-primary-foreground">
+                      {formatInteger(stage.count)}
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              {/* Label */}
-              <p className="text-xs text-center text-muted-foreground leading-tight mt-1">
-                {stage.label}
-              </p>
             </div>
           );
         })}

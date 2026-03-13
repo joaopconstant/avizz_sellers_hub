@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { startOfMonth } from "date-fns";
 import { format } from "date-fns";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ModernTvIcon } from "@hugeicons/core-free-icons";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 import { api } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
 import { MonthPicker } from "@/components/dashboard/MonthPicker";
 import { MetaSection } from "@/components/dashboard/MetaSection";
 import { ProjectionBoxes } from "@/components/dashboard/ProjectionBoxes";
@@ -14,6 +17,7 @@ import { MetaVsEntregueTable } from "@/components/dashboard/MetaVsEntregueTable"
 import { InsightsSection } from "@/components/dashboard/InsightsSection";
 import { InsightModal } from "@/components/dashboard/InsightModal";
 import { ColaboradorModal } from "@/components/dashboard/ColaboradorModal";
+import { TVModeView } from "@/components/dashboard/TVModeView";
 import type { InsightType } from "@/components/dashboard/types";
 
 const isAdminOrHead = (role: UserRole) => role === "admin" || role === "head";
@@ -28,6 +32,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
   const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [insightType, setInsightType] = useState<InsightType | null>(null);
+  const [tvMode, setTvMode] = useState(false);
 
   const monthStr = format(month, "yyyy-MM-dd");
 
@@ -38,6 +43,13 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
     { month: monthStr },
     { enabled: isAdminOrHead(role) },
   );
+
+  const refetchAll = useCallback(() => {
+    void summary.refetch();
+    void funnel.refetch();
+    void rankings.refetch();
+    if (isAdminOrHead(role)) void insights.refetch();
+  }, [summary, funnel, rankings, insights, role]);
 
   const isLoading =
     summary.isLoading || funnel.isLoading || rankings.isLoading;
@@ -87,7 +99,13 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Bem-vindo, {name}!</p>
         </div>
-        <MonthPicker month={month} onChange={setMonth} />
+        <div className="flex items-center gap-2">
+          <MonthPicker month={month} onChange={setMonth} />
+          <Button variant="outline" size="sm" onClick={() => setTvMode(true)}>
+            <HugeiconsIcon icon={ModernTvIcon} size={16} className="mr-1.5" />
+            TV
+          </Button>
+        </div>
       </div>
 
       <MetaSection
@@ -143,6 +161,17 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
         data={insights.data}
         onClose={() => setInsightType(null)}
       />
+
+      {tvMode && (
+        <TVModeView
+          month={month}
+          summary={summary.data!}
+          funnel={funnel.data!}
+          rankings={rankings.data!}
+          onClose={() => setTvMode(false)}
+          onRefetch={refetchAll}
+        />
+      )}
     </div>
   );
 }

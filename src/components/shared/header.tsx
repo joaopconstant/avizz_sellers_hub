@@ -7,9 +7,7 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4 shadow-sm">
-      <div className="text-sm font-medium text-muted-foreground">
-        Avizz Hub
-      </div>
+      <div className="text-sm font-medium text-muted-foreground">Avizz Hub</div>
 
       <div className="flex items-center gap-3">
         {user?.image && (
@@ -21,7 +19,9 @@ export async function Header() {
             className="rounded-full"
           />
         )}
+
         <span className="text-sm font-medium">{user?.name}</span>
+        <span className="text-xs font-light">{user?.role}</span>
 
         <form
           action={async () => {
