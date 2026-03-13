@@ -34,7 +34,7 @@ function rankBadge(index: number) {
 
 function tvRankColor(index: number, realized: number, goal: number | null): string {
   if (index === 0) return "text-amber-400 font-bold";
-  if (goal === null || goal === 0) return "text-white";
+  if (goal === null || goal === 0) return "text-foreground";
   const pct = realized / goal;
   if (pct >= 0.8) return "text-green-400";
   if (pct >= 0.5) return "text-amber-400";
@@ -63,17 +63,17 @@ function GoalBar({ realized, goal, label, valueLabel }: {
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-xs uppercase tracking-widest text-white/40">{label}</span>
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">{label}</span>
         <span className="text-2xl font-bold tabular-nums text-primary">{Math.round(pct)}%</span>
       </div>
-      <div className="text-4xl font-bold tabular-nums text-white leading-none">{valueLabel}</div>
-      <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+      <div className="text-4xl font-bold tabular-nums text-foreground leading-none">{valueLabel}</div>
+      <div className="h-3 rounded-full bg-muted overflow-hidden">
         <div
           className="h-full rounded-full bg-primary transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="text-xs text-white/40">
+      <div className="text-xs text-muted-foreground">
         meta {goal && goal > 0 ? formatCurrency(goal) : "—"}
       </div>
     </div>
@@ -117,22 +117,22 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
   const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[oklch(0.145_0_0)] text-white flex flex-col select-none">
+    <div className="fixed inset-0 z-50 bg-background text-foreground flex flex-col select-none">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 h-14 border-b border-white/10 shrink-0">
+      <div className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-primary">Avizz Hub</span>
-          <span className="text-white/20">|</span>
-          <span className="text-base text-white/60">{monthLabelCapitalized}</span>
+          <span className="text-border">|</span>
+          <span className="text-base text-muted-foreground">{monthLabelCapitalized}</span>
         </div>
         <div className="flex items-center gap-5">
-          <span className="text-xs text-white/30">
+          <span className="text-xs text-muted-foreground">
             Atualizado {format(lastRefresh, "HH:mm")}
           </span>
-          <span className="text-2xl font-mono tabular-nums text-white/80">{clock}</span>
+          <span className="text-2xl font-mono tabular-nums text-foreground/80">{clock}</span>
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent"
           >
             <HugeiconsIcon icon={Cancel01Icon} size={16} />
             Sair
@@ -147,8 +147,8 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
         <div className="col-span-2 flex flex-col gap-4">
 
           {/* Metas */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-6">
-            <span className="text-xs uppercase tracking-widest text-white/40">Metas do Mês</span>
+          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">Metas do Mês</span>
             <GoalBar
               label="Caixa"
               realized={s.cashRealized}
@@ -167,37 +167,37 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
           <div className="grid grid-cols-2 gap-3 flex-1">
             {/* Projeção */}
             <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 flex flex-col justify-between">
-              <span className="text-xs uppercase tracking-widest text-white/40">Projeção Caixa</span>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Projeção Caixa</span>
               <div>
-                <div className="text-3xl font-bold tabular-nums text-white mt-2">
+                <div className="text-3xl font-bold tabular-nums text-foreground mt-2">
                   {formatCurrency(s.cashProjected)}
                 </div>
-                <div className="text-xs text-white/30 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {s.workdaysElapsed} de {s.workdaysTotal} dias úteis
                 </div>
               </div>
             </div>
 
             {/* Vendas count */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col justify-between">
-              <span className="text-xs uppercase tracking-widest text-white/40">Vendas</span>
-              <div className="text-5xl font-bold tabular-nums text-white mt-2 leading-none">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Vendas</span>
+              <div className="text-5xl font-bold tabular-nums text-foreground mt-2 leading-none">
                 {formatInteger(s.salesCount)}
               </div>
             </div>
 
             {/* Receita Líquida */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col justify-between">
-              <span className="text-xs uppercase tracking-widest text-white/40">Receita Líquida</span>
-              <div className="text-3xl font-bold tabular-nums text-white mt-2">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Receita Líquida</span>
+              <div className="text-3xl font-bold tabular-nums text-foreground mt-2">
                 {formatCurrency(s.netRealized)}
               </div>
             </div>
 
             {/* Receita Futura */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-col justify-between">
-              <span className="text-xs uppercase tracking-widest text-white/40">Receita Futura</span>
-              <div className="text-3xl font-bold tabular-nums text-white mt-2">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Receita Futura</span>
+              <div className="text-3xl font-bold tabular-nums text-foreground mt-2">
                 {formatCurrency(s.futureRevenue)}
               </div>
             </div>
@@ -210,15 +210,15 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
           {/* Rankings */}
           <div className="grid grid-cols-2 gap-4 flex-1">
             {/* Closers */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5 flex flex-col gap-3 overflow-hidden">
-              <span className="text-xs uppercase tracking-widest text-white/40 shrink-0">Ranking Closers</span>
+            <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3 overflow-hidden">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground shrink-0">Ranking Closers</span>
               {rankings.closers.length === 0 ? (
-                <p className="text-sm text-white/30">Nenhum closer cadastrado.</p>
+                <p className="text-sm text-muted-foreground">Nenhum closer cadastrado.</p>
               ) : (
                 <div className="space-y-1 overflow-hidden">
                   {rankings.closers.slice(0, 5).map((c, idx) => (
-                    <div key={c.userId} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-                      <span className={`text-xl w-8 text-center shrink-0 ${idx >= 3 ? "text-sm text-white/40" : ""}`}>
+                    <div key={c.userId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                      <span className={`text-xl w-8 text-center shrink-0 ${idx >= 3 ? "text-sm text-muted-foreground" : ""}`}>
                         {rankBadge(idx)}
                       </span>
                       <Initials name={c.name} url={c.avatarUrl} />
@@ -226,7 +226,7 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                         <p className={`text-base font-medium truncate ${tvRankColor(idx, c.cashRealized, c.cashGoal)}`}>
                           {c.name}
                         </p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-muted-foreground">
                           {c.salesCount} venda{c.salesCount !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -235,7 +235,7 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                           {formatCurrency(c.cashRealized)}
                         </p>
                         {c.cashGoal !== null && (
-                          <p className="text-xs text-white/30">meta {formatCurrency(c.cashGoal)}</p>
+                          <p className="text-xs text-muted-foreground">meta {formatCurrency(c.cashGoal)}</p>
                         )}
                       </div>
                     </div>
@@ -245,15 +245,15 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
             </div>
 
             {/* SDRs */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5 flex flex-col gap-3 overflow-hidden">
-              <span className="text-xs uppercase tracking-widest text-white/40 shrink-0">Ranking SDRs</span>
+            <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3 overflow-hidden">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground shrink-0">Ranking SDRs</span>
               {rankings.sdrs.length === 0 ? (
-                <p className="text-sm text-white/30">Nenhum SDR cadastrado.</p>
+                <p className="text-sm text-muted-foreground">Nenhum SDR cadastrado.</p>
               ) : (
                 <div className="space-y-1 overflow-hidden">
                   {rankings.sdrs.slice(0, 5).map((u, idx) => (
-                    <div key={u.userId} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-                      <span className={`text-xl w-8 text-center shrink-0 ${idx >= 3 ? "text-sm text-white/40" : ""}`}>
+                    <div key={u.userId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                      <span className={`text-xl w-8 text-center shrink-0 ${idx >= 3 ? "text-sm text-muted-foreground" : ""}`}>
                         {rankBadge(idx)}
                       </span>
                       <Initials name={u.name} url={u.avatarUrl} />
@@ -261,7 +261,7 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                         <p className={`text-base font-medium truncate ${tvRankColor(idx, u.cashRealized, u.cashGoal)}`}>
                           {u.name}
                         </p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-muted-foreground">
                           {u.meetingsHeld}/{u.meetingsScheduled} reuniões
                         </p>
                       </div>
@@ -270,7 +270,7 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                           {formatCurrency(u.cashRealized)}
                         </p>
                         {u.cashGoal !== null && (
-                          <p className="text-xs text-white/30">meta {formatCurrency(u.cashGoal)}</p>
+                          <p className="text-xs text-muted-foreground">meta {formatCurrency(u.cashGoal)}</p>
                         )}
                       </div>
                     </div>
@@ -281,8 +281,8 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
           </div>
 
           {/* Funil */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5 flex flex-col gap-2 shrink-0">
-            <span className="text-xs uppercase tracking-widest text-white/40 mb-1">Funil de Conversão</span>
+          <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2 shrink-0">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Funil de Conversão</span>
             {funnel.map((stage, idx) => {
               const maxCount = Math.max(...funnel.map((s) => s.count), 1);
               const rawPct = (stage.count / maxCount) * 100;
@@ -292,14 +292,14 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                 <div key={stage.label}>
                   {stage.conversionFromPrev !== null && (
                     <div className="flex items-center gap-2 py-0.5 pl-2">
-                      <span className="text-white/30 text-xs">↓</span>
-                      <span className="text-xs text-white/30">
+                      <span className="text-muted-foreground text-xs">↓</span>
+                      <span className="text-xs text-muted-foreground">
                         {stage.conversionFromPrev.toFixed(1)}% de conversão
                       </span>
                     </div>
                   )}
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-white/40 w-36 shrink-0 text-right leading-tight">
+                    <span className="text-xs text-muted-foreground w-36 shrink-0 text-right leading-tight">
                       {stage.label}
                     </span>
                     <div className="flex-1 flex items-center gap-2">
@@ -309,7 +309,7 @@ export function TVModeView({ month, summary: s, funnel, rankings, onClose, onRef
                         }`}
                         style={{ width: `${barPct}%` }}
                       >
-                        <span className="text-sm font-bold text-white/90 tabular-nums">
+                        <span className="text-sm font-bold text-primary-foreground tabular-nums">
                           {formatInteger(stage.count)}
                         </span>
                       </div>

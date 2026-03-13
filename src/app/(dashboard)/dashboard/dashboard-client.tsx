@@ -108,15 +108,24 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
         </div>
       </div>
 
-      <MetaSection
-        cashGoal={s.cashGoal}
-        cashRealized={s.cashRealized}
-        salesGoal={s.salesGoal}
-        salesCount={s.salesCount}
-        myCashRealized={canSeePersonal(role) ? s.myCashRealized : null}
-        mySalesCount={canSeePersonal(role) ? s.mySalesCount : null}
-      />
+      {/* Row 1: Metas + Funil lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2">
+          <MetaSection
+            cashGoal={s.cashGoal}
+            cashRealized={s.cashRealized}
+            salesGoal={s.salesGoal}
+            salesCount={s.salesCount}
+            myCashRealized={canSeePersonal(role) ? s.myCashRealized : null}
+            mySalesCount={canSeePersonal(role) ? s.mySalesCount : null}
+          />
+        </div>
+        <div className="lg:col-span-3">
+          <FunnelSection stages={funnel.data} />
+        </div>
+      </div>
 
+      {/* Row 2: KPIs */}
       <ProjectionBoxes
         cashRealized={s.cashRealized}
         cashProjected={s.cashProjected}
@@ -127,8 +136,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
         workdaysTotal={s.workdaysTotal}
       />
 
-      <FunnelSection stages={funnel.data} />
-
+      {/* Row 3: Rankings */}
       <RankingsSection
         closers={rankings.data.closers}
         sdrs={rankings.data.sdrs}

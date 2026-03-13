@@ -32,7 +32,7 @@ function KpiBox({
       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
         {label}
       </p>
-      <p className="text-xl font-bold">{value}</p>
+      <p className="text-2xl font-bold tabular-nums">{value}</p>
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
     </div>
   );

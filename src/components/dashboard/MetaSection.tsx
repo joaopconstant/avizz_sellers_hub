@@ -35,12 +35,12 @@ function ProgressBar({
           {sublabel && <p className="text-xs text-muted-foreground">{sublabel}</p>}
         </div>
         <div className="text-right">
-          <span className="text-sm font-semibold">{format(realized)}</span>
+          <span className="text-base font-bold tabular-nums">{format(realized)}</span>
           {goal !== null && (
             <span className="text-xs text-muted-foreground ml-1">/ {format(goal)}</span>
           )}
           {pctDisplay !== null && (
-            <span className="ml-2 text-xs font-medium text-muted-foreground">
+            <span className="ml-2 text-sm font-semibold text-primary">
               {pctDisplay}%
             </span>
           )}
