@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -10,8 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { IndividualGoalModal, formatGoalTarget } from "./individual-goal-modal";
+import { cn } from "@/lib/utils";
+import { UserAvatar, ROLE_COLORS } from "./user-avatar";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 import type { IndividualGoalItem } from "./types";
 
@@ -41,30 +43,45 @@ export function IndividualGoalsSection({
 
   return (
     <>
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Colaborador</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Meta Caixa</TableHead>
-              <TableHead className="text-right">Meta Vendas</TableHead>
-              <TableHead className="text-right">No-Show Máx.</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="font-semibold">Colaborador</TableHead>
+              <TableHead className="font-semibold">Role</TableHead>
+              <TableHead className="text-right font-semibold">
+                Meta Caixa
+              </TableHead>
+              <TableHead className="text-right font-semibold">
+                Meta Vendas
+              </TableHead>
+              <TableHead className="text-right font-semibold">
+                No-Show Máx.
+              </TableHead>
               {isAdmin && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {individualGoals.map((ig) => (
-              <TableRow key={ig.id}>
-                <TableCell className="font-medium text-sm">
-                  {ig.user.name}
+              <TableRow key={ig.id} className="group">
+                <TableCell>
+                  <div className="flex items-center gap-2.5">
+                    <UserAvatar name={ig.user.name} role={ig.user.role} />
+                    <span className="font-medium text-sm">{ig.user.name}</span>
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className="capitalize text-xs">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "capitalize text-xs",
+                      ROLE_COLORS[ig.user.role],
+                    )}
+                  >
                     {ig.user.role}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-sm">
+                <TableCell className="text-right tabular-nums text-sm font-medium">
                   {formatGoalTarget(ig.cash_goal, "cash")}
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-sm">
@@ -79,8 +96,9 @@ export function IndividualGoalsSection({
                   <TableCell className="text-right">
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="ghost"
                       onClick={() => setEditing(ig)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2 text-xs"
                     >
                       Editar
                     </Button>

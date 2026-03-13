@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DollarSign, ShoppingCart } from "lucide-react";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 
 interface SerializedGoal {
@@ -24,20 +25,26 @@ interface GlobalGoalSectionProps {
   onSaved: () => void;
 }
 
-function ProgressBar({ realized, goal }: { realized: number; goal: number }) {
-  const pct = goal > 0 ? Math.min((realized / goal) * 100, 100) : 0;
-  const pctDisplay = goal > 0 ? Math.round((realized / goal) * 100) : null;
+function MetricCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
   return (
-    <div className="relative h-4 rounded-full bg-muted overflow-hidden">
-      <div
-        className="h-full rounded-full bg-primary transition-all duration-700"
-        style={{ width: `${pct}%` }}
-      />
-      {pctDisplay !== null && (
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold tabular-nums">
-          {pctDisplay}%
-        </span>
-      )}
+    <div className="rounded-xl border bg-muted/30 p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          {icon}
+        </div>
+      </div>
+      <p className="text-3xl font-bold tabular-nums">{value}</p>
     </div>
   );
 }
@@ -91,104 +98,122 @@ export function GlobalGoalSection({
     });
   }
 
-  // Leitura para Head
+  // ─── Head: somente leitura ───────────────────────────────────────────────
   if (!isAdmin) {
-    return (
-      <div className="space-y-6">
-        {!goal ? (
+    if (!goal) {
+      return (
+        <div className="py-8 text-center">
           <p className="text-sm text-muted-foreground">
             Nenhuma meta definida para este mês.
           </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-lg border bg-card p-5 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Meta Caixa
-              </p>
-              <p className="text-3xl font-bold tabular-nums text-primary">
-                {formatCurrency(goal.cash_goal)}
-              </p>
-              <ProgressBar realized={0} goal={goal.cash_goal} />
-            </div>
-            <div className="rounded-lg border bg-card p-5 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Meta de Vendas
-              </p>
-              <p className="text-3xl font-bold tabular-nums text-primary">
-                {goal.sales_goal}
-              </p>
-              <ProgressBar realized={0} goal={goal.sales_goal} />
-            </div>
-          </div>
-        )}
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Meta do Mês
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <MetricCard
+            label="Meta Caixa"
+            value={formatCurrency(goal.cash_goal)}
+            icon={<DollarSign className="h-4 w-4 text-primary" />}
+          />
+          <MetricCard
+            label="Meta de Vendas"
+            value={`${goal.sales_goal} venda${goal.sales_goal !== 1 ? "s" : ""}`}
+            icon={<ShoppingCart className="h-4 w-4 text-primary" />}
+          />
+        </div>
       </div>
     );
   }
 
-  // Formulário para Admin
+  // ─── Admin: formulário ───────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
+    <div className="space-y-5">
       {goal && (
-        <div className="rounded-md border bg-muted/30 p-4 text-sm">
-          <p className="text-muted-foreground">Meta atual:</p>
-          <p className="font-medium mt-1">
-            Caixa: {formatCurrency(goal.cash_goal)} · Vendas: {goal.sales_goal}
+        <div className="rounded-lg border-l-4 border-l-primary bg-primary/5 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Meta atual
           </p>
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-xs text-muted-foreground">Caixa</p>
+              <p className="text-lg font-bold tabular-nums">
+                {formatCurrency(goal.cash_goal)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Vendas</p>
+              <p className="text-lg font-bold tabular-nums">{goal.sales_goal}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="cash_goal">Meta Caixa (R$)</Label>
-        <Input
-          id="cash_goal"
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="Ex: 80000"
-          value={cashGoal}
-          onChange={(e) => setCashGoal(e.target.value)}
-          required
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="cash_goal">Meta Caixa (R$)</Label>
+            <Input
+              id="cash_goal"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Ex: 80000"
+              value={cashGoal}
+              onChange={(e) => setCashGoal(e.target.value)}
+              required
+            />
+          </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="sales_goal">Meta de Vendas</Label>
-        <Input
-          id="sales_goal"
-          type="number"
-          min="1"
-          step="1"
-          placeholder="Ex: 8"
-          value={salesGoal}
-          onChange={(e) => setSalesGoal(e.target.value)}
-          required
-        />
-      </div>
-
-      {goal && (
-        <div className="space-y-1.5">
-          <Label htmlFor="reason">
-            Motivo da alteração <span className="text-destructive">*</span>
-          </Label>
-          <Textarea
-            id="reason"
-            placeholder="Descreva o motivo da alteração da meta..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="sales_goal">Meta de Vendas</Label>
+            <Input
+              id="sales_goal"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ex: 8"
+              value={salesGoal}
+              onChange={(e) => setSalesGoal(e.target.value)}
+              required
+            />
+          </div>
         </div>
-      )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+        {goal && (
+          <div className="space-y-1.5">
+            <Label htmlFor="reason">
+              Motivo da alteração{" "}
+              <span className="text-destructive font-medium">*</span>
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder="Descreva o motivo da alteração da meta..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+        )}
 
-      <Button type="submit" disabled={upsert.isPending}>
-        {upsert.isPending
-          ? "Salvando..."
-          : goal
-            ? "Atualizar Meta"
-            : "Criar Meta"}
-      </Button>
-    </form>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <Button
+          type="submit"
+          disabled={upsert.isPending}
+          className="w-full sm:w-auto"
+        >
+          {upsert.isPending
+            ? "Salvando..."
+            : goal
+              ? "Atualizar Meta"
+              : "Criar Meta"}
+        </Button>
+      </form>
+    </div>
   );
 }
