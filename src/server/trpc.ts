@@ -82,5 +82,5 @@ export const goalsViewProcedure = t.procedure.use(enforceRole("admin", "head"));
 export const goalsEditProcedure = t.procedure.use(enforceRole("admin"));
 
 export const dashboardGlobalProcedure = t.procedure.use(
-  enforceRole("admin", "head", "operational"),
+  enforceRole("admin", "head", "closer", "sdr", "operational"),
 );
