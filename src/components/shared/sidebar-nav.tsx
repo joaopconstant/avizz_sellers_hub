@@ -37,21 +37,6 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["admin", "head", "closer", "sdr", "operational"],
   },
   {
-    href: "/tools/roi",
-    label: "Calculadora ROI",
-    roles: ["admin", "head", "closer", "sdr", "operational"],
-  },
-  {
-    href: "/tools/commission",
-    label: "Simulador Comissão",
-    roles: ["admin", "head", "closer", "sdr", "operational"],
-  },
-  {
-    href: "/clients",
-    label: "Clientes Ativos",
-    roles: ["admin", "head", "operational"],
-  },
-  {
     href: "/management/goals",
     label: "Gestão de Metas",
     roles: ["admin", "head"],

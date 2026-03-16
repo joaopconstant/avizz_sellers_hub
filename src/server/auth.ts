@@ -41,14 +41,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return false;
         }
 
-        // Usuário deve ser pré-cadastrado por um admin antes do primeiro login.
-        // Se não existir ou estiver inativo, acesso negado. (CLAUDE.md — Autenticação)
-        const user = await db.user.findUnique({
+        const existingUser = await db.user.findUnique({
           where: { email },
           select: { is_active: true },
         });
 
-        if (!user || !user.is_active) {
+        if (!existingUser) {
+          // Auto-criar usuário no primeiro login com role padrão SDR
+          const company = await db.company.findFirst();
+          if (!company) return false;
+
+          const googleProfile = profile as { picture?: string | null };
+          await db.user.create({
+            data: {
+              company_id: company.id,
+              name: profile?.name ?? email.split("@")[0],
+              email,
+              role: "sdr",
+              is_active: true,
+              avatar_url: googleProfile?.picture ?? null,
+            },
+          });
+          return true;
+        }
+
+        if (!existingUser.is_active) {
           return false;
         }
       }
