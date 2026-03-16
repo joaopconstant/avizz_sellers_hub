@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle } from "lucide-react";
 import type { UserRole } from "@/lib/generated/prisma/enums";
+import { ROLE_LABELS } from "@/lib/role-config";
 
 export type UserItem = {
   id: string;
@@ -23,14 +24,6 @@ export type UserItem = {
   is_active: boolean;
   avatar_url: string | null;
   created_at: Date;
-};
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  head: "Head",
-  closer: "Closer",
-  sdr: "SDR",
-  operational: "Operacional",
 };
 
 interface UserModalProps {
@@ -152,7 +145,7 @@ export function UserModal({
             </select>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
 
         <DialogFooter>

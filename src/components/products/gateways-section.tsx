@@ -22,6 +22,7 @@ export function GatewaysSection({
   const [rateGateway, setRateGateway] = useState<GatewayItem | null>(null);
   const [newName, setNewName] = useState("");
   const [creatingError, setCreatingError] = useState("");
+  const [toggleError, setToggleError] = useState("");
 
   const createMutation = api.gateways.create.useMutation({
     onSuccess: () => {
@@ -33,7 +34,11 @@ export function GatewaysSection({
   });
 
   const toggleMutation = api.gateways.toggleActive.useMutation({
-    onSuccess: onRefetch,
+    onSuccess: () => {
+      setToggleError("");
+      onRefetch();
+    },
+    onError: (e) => setToggleError(e.message),
   });
 
   function handleCreate() {
@@ -72,10 +77,14 @@ export function GatewaysSection({
             Adicionar
           </Button>
         </div>
-        {creatingError && (
+        {creatingError ? (
           <p className="text-sm text-destructive">{creatingError}</p>
-        )}
+        ) : null}
       </div>
+
+      {toggleError ? (
+        <p className="text-sm text-destructive">{toggleError}</p>
+      ) : null}
 
       {/* Lista de gateways */}
       {gateways.length === 0 ? (

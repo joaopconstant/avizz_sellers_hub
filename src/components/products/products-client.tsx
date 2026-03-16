@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,19 +43,24 @@ export function ProductsClient() {
     refetch: refetchGateways,
   } = api.gateways.listAll.useQuery();
 
-  const [orderedProducts, setOrderedProducts] = useState<ProductItem[]>([]);
+  const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
-  const [auditProductId, setAuditProductId] = useState<string | null>(null);
-  const [auditProductName, setAuditProductName] = useState<string | undefined>();
+  const [auditProduct, setAuditProduct] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    if (productsData) {
-      setOrderedProducts(productsData as ProductItem[]);
-    }
-  }, [productsData]);
+  const orderedProducts = useMemo(() => {
+    const base = (productsData as ProductItem[]) ?? [];
+    if (!pendingOrder) return base;
+    const map = new Map(base.map((p) => [p.id, p]));
+    return pendingOrder.map((id) => map.get(id)).filter((p): p is ProductItem => !!p);
+  }, [productsData, pendingOrder]);
 
-  const reorderMutation = api.products.reorder.useMutation();
+  const reorderMutation = api.products.reorder.useMutation({
+    onSuccess: () => {
+      setPendingOrder(null);
+      void refetchProducts();
+    },
+  });
 
   const toggleActiveMutation = api.products.update.useMutation({
     onSuccess: () => void refetchProducts(),
@@ -66,7 +71,7 @@ export function ProductsClient() {
     const swap = index + direction;
     if (swap < 0 || swap >= newArr.length) return;
     [newArr[index], newArr[swap]] = [newArr[swap]!, newArr[index]!];
-    setOrderedProducts(newArr);
+    setPendingOrder(newArr.map((p) => p.id));
     reorderMutation.mutate({ orderedIds: newArr.map((p) => p.id) });
   }
 
@@ -93,8 +98,7 @@ export function ProductsClient() {
   }
 
   function openAudit(product: ProductItem) {
-    setAuditProductId(product.id);
-    setAuditProductName(product.name);
+    setAuditProduct({ id: product.id, name: product.name });
   }
 
   return (
@@ -300,13 +304,10 @@ export function ProductsClient() {
       />
 
       <ProductAuditLogModal
-        productId={auditProductId}
-        productName={auditProductName}
-        open={!!auditProductId}
-        onClose={() => {
-          setAuditProductId(null);
-          setAuditProductName(undefined);
-        }}
+        productId={auditProduct?.id ?? null}
+        productName={auditProduct?.name}
+        open={!!auditProduct}
+        onClose={() => setAuditProduct(null)}
       />
     </div>
   );

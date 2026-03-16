@@ -3,6 +3,16 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, adminProcedure } from "@/server/trpc";
 import { UserRole } from "@/lib/generated/prisma/enums";
 
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  is_active: true,
+  avatar_url: true,
+  created_at: true,
+} as const;
+
 export const usersRouter = createTRPCRouter({
   // ── Lista todos os usuários da empresa ───────────────────────────────────
   list: adminProcedure.query(async ({ ctx }) => {
@@ -15,15 +25,7 @@ export const usersRouter = createTRPCRouter({
 
     return db.user.findMany({
       where: { company_id: currentUser.company_id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        avatar_url: true,
-        created_at: true,
-      },
+      select: USER_SELECT,
       orderBy: { name: "asc" },
     });
   }),
@@ -47,14 +49,15 @@ export const usersRouter = createTRPCRouter({
         });
       }
 
-      const currentUser = await db.user.findUniqueOrThrow({
-        where: { id: session.user.id },
-        select: { company_id: true },
-      });
+      // Fetch company_id and check email uniqueness in parallel
+      const [currentUser, existing] = await Promise.all([
+        db.user.findUniqueOrThrow({
+          where: { id: session.user.id },
+          select: { company_id: true },
+        }),
+        db.user.findUnique({ where: { email: input.email } }),
+      ]);
 
-      const existing = await db.user.findUnique({
-        where: { email: input.email },
-      });
       if (existing) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -70,15 +73,7 @@ export const usersRouter = createTRPCRouter({
           role: input.role,
           is_active: true,
         },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          is_active: true,
-          avatar_url: true,
-          created_at: true,
-        },
+        select: USER_SELECT,
       });
     }),
 
@@ -93,10 +88,7 @@ export const usersRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      if (
-        input.userId === session.user.id &&
-        input.role !== UserRole.admin
-      ) {
+      if (input.userId === session.user.id && input.role !== UserRole.admin) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Você não pode remover seu próprio cargo de admin.",
@@ -106,15 +98,7 @@ export const usersRouter = createTRPCRouter({
       return db.user.update({
         where: { id: input.userId },
         data: { role: input.role },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          is_active: true,
-          avatar_url: true,
-          created_at: true,
-        },
+        select: USER_SELECT,
       });
     }),
 
@@ -139,15 +123,7 @@ export const usersRouter = createTRPCRouter({
       return db.user.update({
         where: { id: input.userId },
         data: { is_active: !user.is_active },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          is_active: true,
-          avatar_url: true,
-          created_at: true,
-        },
+        select: USER_SELECT,
       });
     }),
 });

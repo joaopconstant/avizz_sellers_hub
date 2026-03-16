@@ -1,6 +1,28 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/trpc";
 
+type GatewayWithRates = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: Date;
+  rates: { id: string; installments: number; rate_percent: { toNumber(): number } | number }[];
+};
+
+function serializeGateway(g: GatewayWithRates) {
+  return {
+    id: g.id,
+    name: g.name,
+    is_active: g.is_active,
+    created_at: g.created_at.toISOString(),
+    rates: g.rates.map((r) => ({
+      id: r.id,
+      installments: r.installments,
+      rate_percent: typeof r.rate_percent === "number" ? r.rate_percent : r.rate_percent.toNumber(),
+    })),
+  };
+}
+
 export const gatewaysRouter = createTRPCRouter({
   /**
    * Lista gateways ativos da empresa.
@@ -65,17 +87,7 @@ export const gatewaysRouter = createTRPCRouter({
       orderBy: { name: "asc" },
     });
 
-    return gateways.map((g) => ({
-      id: g.id,
-      name: g.name,
-      is_active: g.is_active,
-      created_at: g.created_at.toISOString(),
-      rates: g.rates.map((r) => ({
-        id: r.id,
-        installments: r.installments,
-        rate_percent: Number(r.rate_percent),
-      })),
-    }));
+    return gateways.map(serializeGateway);
   }),
 
   // ── Admin: cria gateway ───────────────────────────────────────────────────
@@ -91,16 +103,9 @@ export const gatewaysRouter = createTRPCRouter({
 
       const created = await db.gateway.create({
         data: { company_id: user.company_id, name: input.name, is_active: true },
-        include: { rates: true },
       });
 
-      return {
-        id: created.id,
-        name: created.name,
-        is_active: created.is_active,
-        created_at: created.created_at.toISOString(),
-        rates: [],
-      };
+      return serializeGateway({ ...created, rates: [] });
     }),
 
   // ── Admin: ativa/desativa gateway ────────────────────────────────────────
@@ -118,17 +123,7 @@ export const gatewaysRouter = createTRPCRouter({
         include: { rates: { orderBy: { installments: "asc" } } },
       });
 
-      return {
-        id: updated.id,
-        name: updated.name,
-        is_active: updated.is_active,
-        created_at: updated.created_at.toISOString(),
-        rates: updated.rates.map((r) => ({
-          id: r.id,
-          installments: r.installments,
-          rate_percent: Number(r.rate_percent),
-        })),
-      };
+      return serializeGateway(updated);
     }),
 
   // ── Admin: upsert de taxa ─────────────────────────────────────────────────

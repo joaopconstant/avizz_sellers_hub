@@ -2,39 +2,24 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Users, Pencil } from "lucide-react";
+import type { UserRole } from "@/lib/generated/prisma/enums";
 import type { UserItem } from "./user-modal";
+import { ROLE_LABELS, ROLE_BADGE_CLASSES } from "@/lib/role-config";
 
 // Dialog loaded on demand — not needed in the initial bundle
 const UserModal = dynamic(
   () => import("./user-modal").then((m) => m.UserModal),
   { ssr: false },
 );
-import { Users, Pencil } from "lucide-react";
-import type { UserRole } from "@/lib/generated/prisma/enums";
-import Image from "next/image";
 
 interface UsersClientProps {
   currentUserId: string;
 }
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  head: "Head",
-  closer: "Closer",
-  sdr: "SDR",
-  operational: "Operacional",
-};
-
-const ROLE_BADGE_CLASSES: Record<UserRole, string> = {
-  admin: "bg-rose-100 text-rose-800 border-rose-200",
-  head: "bg-amber-100 text-amber-800 border-amber-200",
-  closer: "bg-violet-100 text-violet-800 border-violet-200",
-  sdr: "bg-blue-100 text-blue-800 border-blue-200",
-  operational: "bg-slate-100 text-slate-700 border-slate-200",
-};
 
 export function UsersClient({ currentUserId }: UsersClientProps) {
   const { data, isLoading, refetch } = api.users.list.useQuery();
@@ -83,11 +68,11 @@ export function UsersClient({ currentUserId }: UsersClientProps) {
       </div>
 
       {/* Toggle error */}
-      {toggleError && (
+      {toggleError ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {toggleError}
         </div>
-      )}
+      ) : null}
 
       {/* Table */}
       <div className="rounded-xl border bg-card overflow-hidden">
