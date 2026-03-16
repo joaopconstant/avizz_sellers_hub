@@ -299,7 +299,7 @@ NODE_ENV="development"
 | 2 | Relatórios Diários + calendário | ✅ |
 | 3 | Registro de Venda + Avanço | ✅ |
 | 4 | Dashboard Comercial completo | ✅ |
-| 5 | Gestão de Metas | 🔲 |
+| 5 | Gestão de Metas | ✅ |
 | 6 | Gestão de Produtos e Usuários | 🔲 |
 | 7 | Validação, responsividade e deploy | 🔲 |
 
