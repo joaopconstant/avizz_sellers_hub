@@ -13,6 +13,7 @@ import {
   startOfDay,
 } from "date-fns";
 import { getWorkdaysInMonth } from "@/lib/workdays";
+import { resolveRangeDates } from "@/lib/date-utils";
 
 const rangeInput = z.object({
   from: z.string().optional(),
@@ -154,10 +155,7 @@ export const dashboardRouter = createTRPCRouter({
       const { session, db } = ctx;
       const role = session.user.role;
       const userId = session.user.id;
-      const startDate = input?.from
-        ? new Date(input.from)
-        : startOfMonth(new Date());
-      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
+      const { startDate, endDate } = resolveRangeDates(input);
       const monthStart = startOfMonth(startDate);
 
       const [sales, advancesAgg, goal] = await Promise.all([
@@ -233,10 +231,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(rangeInput.extend({ userId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
-      const startDate = input?.from
-        ? new Date(input.from)
-        : startOfMonth(new Date());
-      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
+      const { startDate, endDate } = resolveRangeDates(input);
       const role = session.user.role;
 
       const canFilterUser = role === "admin" || role === "head";
@@ -320,10 +315,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(rangeInput.optional())
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const startDate = input?.from
-        ? new Date(input.from)
-        : startOfMonth(new Date());
-      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
+      const { startDate, endDate } = resolveRangeDates(input);
 
       // Closers e SDRs ativos
       const [closers, sdrs, sales, individualGoals, reports] =
@@ -543,10 +535,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(rangeInput.optional())
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const startDate = input?.from
-        ? new Date(input.from)
-        : startOfMonth(new Date());
-      const endDate = input?.to ? new Date(input.to) : endOfMonth(startDate);
+      const { startDate, endDate } = resolveRangeDates(input);
 
       // Busca MoM (6 meses) + mês atual em query única
       const momWindowStart = startOfMonth(subMonths(startDate, 5));

@@ -29,6 +29,8 @@ import {
   Pencil,
   History,
 } from "lucide-react";
+import { Spinner } from "@/components/shared/Spinner";
+import { SectionHeader } from "@/components/shared/SectionHeader";
 
 export function ProductsClient() {
   const {
@@ -105,19 +107,11 @@ export function ProductsClient() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Package className="h-4 w-4 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Gestão de Produtos
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Gerencie produtos, configurações de gateways e taxas de parcelamento
-          </p>
-        </div>
+        <SectionHeader
+          icon={Package}
+          title="Gestão de Produtos"
+          subtitle="Gerencie produtos, configurações de gateways e taxas de parcelamento"
+        />
       </div>
 
       <Tabs defaultValue="products" className="space-y-0">
@@ -156,8 +150,8 @@ export function ProductsClient() {
             </div>
 
             {productsLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                Carregando...
+              <div className="py-12 text-center">
+                <Spinner label="Carregando..." />
               </div>
             ) : orderedProducts.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">

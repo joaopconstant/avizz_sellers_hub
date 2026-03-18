@@ -2,9 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/formatting";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatCurrency, formatDatePtBR } from "@/lib/formatting";
+import { PAYMENT_LABELS, ORIGIN_LABELS } from "@/lib/constants";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type SaleRow = {
   id: string;
@@ -29,21 +29,6 @@ type SalesListProps = {
   isDeleting?: boolean;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const PAYMENT_LABELS: Record<string, string> = {
-  pix: "PIX",
-  card: "Cartão",
-  boleto: "Boleto",
-};
-
-const ORIGIN_LABELS: Record<string, string> = {
-  organic: "Orgânico",
-  referral: "Indicação",
-  outbound: "Outbound",
-  advance: "Avanço",
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SalesList({
@@ -53,12 +38,10 @@ export function SalesList({
 }: SalesListProps) {
   if (sales.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm text-muted-foreground">Nenhuma venda registrada ainda.</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Clique em &ldquo;Nova Venda&rdquo; para registrar.
-        </p>
-      </div>
+      <EmptyState
+        message="Nenhuma venda registrada ainda."
+        hint='Clique em "Nova Venda" para registrar.'
+      />
     );
   }
 
@@ -78,13 +61,10 @@ export function SalesList({
           </tr>
         </thead>
         <tbody className="divide-y">
-          {sales.map((sale) => {
-            const formattedDate = format(parseISO(sale.sale_date), "dd/MM/yyyy", { locale: ptBR });
-
-            return (
+          {sales.map((sale) => (
               <tr key={sale.id} className="group hover:bg-muted/30">
                 <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
-                  {formattedDate}
+                  {formatDatePtBR(sale.sale_date)}
                 </td>
                 <td className="py-3 pr-4">
                   <p className="font-medium text-sm leading-tight">{sale.client_name}</p>
@@ -138,8 +118,7 @@ export function SalesList({
                   </Button>
                 </td>
               </tr>
-            );
-          })}
+          ))}
         </tbody>
       </table>
     </div>

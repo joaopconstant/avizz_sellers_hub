@@ -1,12 +1,11 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/formatting";
+import { formatCurrency, formatDatePtBR } from "@/lib/formatting";
 import { ADVANCE_STATUS_FLAGS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export type AdvanceRow = {
   id: string;
@@ -59,14 +58,10 @@ export function AdvancesList({
 
   if (advances.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          Nenhum avanço registrado ainda.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Clique em &ldquo;Novo Avanço&rdquo; para começar.
-        </p>
-      </div>
+      <EmptyState
+        message="Nenhum avanço registrado ainda."
+        hint='Clique em "Novo Avanço" para começar.'
+      />
     );
   }
 
@@ -78,7 +73,7 @@ export function AdvancesList({
         ).map((f) => f.label);
 
         const formattedDeadline = advance.deadline
-          ? format(parseISO(advance.deadline), "dd/MM/yyyy", { locale: ptBR })
+          ? formatDatePtBR(advance.deadline)
           : null;
 
         return (

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, adminProcedure } from "@/server/trpc";
 import { UserRole } from "@/lib/generated/prisma/enums";
+import { getCompanyId } from "@/server/helpers/router-helpers";
 
 const USER_SELECT = {
   id: true,
@@ -18,13 +19,10 @@ export const usersRouter = createTRPCRouter({
   list: adminProcedure.query(async ({ ctx }) => {
     const { db, session } = ctx;
 
-    const currentUser = await db.user.findUniqueOrThrow({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const company_id = await getCompanyId(db, session.user.id);
 
     return db.user.findMany({
-      where: { company_id: currentUser.company_id },
+      where: { company_id },
       select: USER_SELECT,
       orderBy: { name: "asc" },
     });
@@ -50,11 +48,8 @@ export const usersRouter = createTRPCRouter({
       }
 
       // Fetch company_id and check email uniqueness in parallel
-      const [currentUser, existing] = await Promise.all([
-        db.user.findUniqueOrThrow({
-          where: { id: session.user.id },
-          select: { company_id: true },
-        }),
+      const [company_id, existing] = await Promise.all([
+        getCompanyId(db, session.user.id),
         db.user.findUnique({ where: { email: input.email } }),
       ]);
 
@@ -67,7 +62,7 @@ export const usersRouter = createTRPCRouter({
 
       return db.user.create({
         data: {
-          company_id: currentUser.company_id,
+          company_id,
           name: input.name,
           email: input.email,
           role: input.role,

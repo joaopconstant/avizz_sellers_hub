@@ -33,3 +33,22 @@ export function formatPercent(value: number): string {
 export function formatInteger(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(Math.round(value));
 }
+
+/** Formata string "YYYY-MM-DD" como "dd/MM/yyyy" em pt-BR. */
+export function formatDatePtBR(isoDateStr: string): string {
+  const [y, m, d] = isoDateStr.split("-").map(Number) as [number, number, number];
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/**
+ * Retorna classe Tailwind de cor baseada em % de realização da meta.
+ * green >= 80%, amber >= 50%, red < 50%.
+ */
+export function goalPctColor(realized: number, goal: number | null): string {
+  if (goal === null || goal === 0) return "text-muted-foreground";
+  const pct = realized / goal;
+  if (pct >= 0.8) return "text-green-600";
+  if (pct >= 0.5) return "text-amber-500";
+  return "text-red-500";
+}

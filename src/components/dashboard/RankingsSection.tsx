@@ -1,6 +1,7 @@
 "use client";
 
-import { formatCurrency } from "@/lib/formatting";
+import { formatCurrency, goalPctColor } from "@/lib/formatting";
+import { UserAvatar } from "@/components/shared/UserAvatar";
 
 interface CloserRank {
   userId: string;
@@ -58,47 +59,6 @@ function medalOrRank(idx: number): string | number {
   return idx + 1;
 }
 
-function pctColor(realized: number, goal: number | null): string {
-  if (goal === null || goal === 0) return "text-muted-foreground";
-  const pct = realized / goal;
-  if (pct >= 0.8) return "text-green-600";
-  if (pct >= 0.5) return "text-amber-500";
-  return "text-red-500";
-}
-
-function Avatar({
-  name,
-  url,
-  size = "md",
-}: {
-  name: string;
-  url: string | null;
-  size?: "sm" | "md" | "lg";
-}) {
-  const cls =
-    size === "lg"
-      ? "w-16 h-16 text-lg"
-      : size === "md"
-        ? "w-10 h-10 text-sm"
-        : "w-8 h-8 text-xs";
-  if (url) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt={name}
-        className={`${cls} rounded-full object-cover ring-2 ring-primary/40`}
-      />
-    );
-  }
-  return (
-    <div
-      className={`${cls} rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary ring-2 ring-primary/20`}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
 
 function PodiumCard({
   rank,
@@ -117,7 +77,7 @@ function PodiumCard({
       className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors hover:bg-muted/40 w-full ${PODIUM_BG[rank] ?? "bg-card border-border"} ${isFirst ? "py-6" : "py-4"}`}
     >
       {isFirst && <span className="text-amber-500 text-xl">🏆</span>}
-      <Avatar
+      <UserAvatar
         name={entry.name}
         url={entry.avatarUrl}
         size={isFirst ? "lg" : "md"}
@@ -227,7 +187,7 @@ function RankingBlock({
                   {entry.midValue}
                 </td>
                 <td
-                  className={`px-3 py-2 text-right font-semibold tabular-nums ${pctColor(entry.cashRealized, entry.cashGoal)}`}
+                  className={`px-3 py-2 text-right font-semibold tabular-nums ${goalPctColor(entry.cashRealized, entry.cashGoal)}`}
                 >
                   {formatCurrency(entry.cashRealized)}
                 </td>

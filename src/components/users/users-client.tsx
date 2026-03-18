@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +9,9 @@ import { Users, Pencil } from "lucide-react";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 import type { UserItem } from "./user-modal";
 import { ROLE_LABELS, ROLE_BADGE_CLASSES } from "@/lib/role-config";
+import { Spinner } from "@/components/shared/Spinner";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { UserAvatar } from "@/components/shared/UserAvatar";
 
 // Dialog loaded on demand — not needed in the initial bundle
 const UserModal = dynamic(
@@ -49,19 +51,11 @@ export function UsersClient({ currentUserId }: UsersClientProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Gestão de Usuários
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cadastre e gerencie os membros da equipe
-          </p>
-        </div>
+        <SectionHeader
+          icon={Users}
+          title="Gestão de Usuários"
+          subtitle="Cadastre e gerencie os membros da equipe"
+        />
         <Button size="sm" onClick={openCreate} className="gap-1.5 shrink-0">
           + Novo Usuário
         </Button>
@@ -77,11 +71,8 @@ export function UsersClient({ currentUserId }: UsersClientProps) {
       {/* Table */}
       <div className="rounded-xl border bg-card overflow-hidden">
         {isLoading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            <div className="inline-flex flex-col items-center gap-3">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span>Carregando usuários...</span>
-            </div>
+          <div className="py-12 text-center">
+            <Spinner label="Carregando usuários..." />
           </div>
         ) : !data || data.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
@@ -110,19 +101,7 @@ export function UsersClient({ currentUserId }: UsersClientProps) {
                   >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        {user.avatar_url ? (
-                          <Image
-                            src={user.avatar_url}
-                            alt={user.name}
-                            width={32}
-                            height={32}
-                            className="rounded-full"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        <UserAvatar name={user.name} url={user.avatar_url} size="sm" />
                         <div>
                           <p className="font-medium leading-tight">
                             {user.name}

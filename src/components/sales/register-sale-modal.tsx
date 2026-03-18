@@ -18,11 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrencyDecimal } from "@/lib/formatting";
 import { REVENUE_TIER_OPTIONS, SALE_ORIGIN_OPTIONS } from "@/lib/constants";
-import {
-  calculateCashValue,
-  calculateFutureRevenue,
-  calculateNetValue,
-} from "@/lib/financials";
+import { FormModal } from "@/components/shared/FormModal";
+import { useFinancialPreview } from "@/hooks/use-financial-preview";
 
 type FormValues = {
   product_id: string;
@@ -69,7 +66,7 @@ const PAYMENT_METHODS = [
   { value: "boleto", label: "Boleto" },
 ] as const;
 
-// ─── Step progress indicator ───────────────────────────────────────────────────
+// ─── Step progress indicator ──────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: number }) {
   return (
@@ -157,7 +154,7 @@ export function RegisterSaleModal({
     },
   });
 
-  // ─── Data queries ───────────────────────────────────────────────────────────
+  // ─── Data queries ────────────────────────────────────────────────────────────
 
   const { data: products = [] } = api.products.listActive.useQuery();
   const { data: gateways = [] } = api.gateways.listActive.useQuery();
@@ -176,7 +173,16 @@ export function RegisterSaleModal({
   const downPaymentNum = parseFloat(downPaymentStr) || 0;
   const installmentsNum = parseInt(installmentsStr, 10);
 
-  // Live gateway rate query for card preview
+  // Financial preview via shared hook (UX only — server recalculates RN-09)
+  const { previewCash, previewNet, previewFuture } = useFinancialPreview({
+    payment_method: paymentMethod,
+    gateway_id: gatewayId || undefined,
+    installments: isNaN(installmentsNum) ? undefined : installmentsNum,
+    contract_value: contractValueNum,
+    down_payment: downPaymentNum,
+  });
+
+  // Gateway rate for installment label display
   const { data: rateData } = api.gateways.getRate.useQuery(
     { gateway_id: gatewayId, installments: installmentsNum },
     {
@@ -188,27 +194,7 @@ export function RegisterSaleModal({
     },
   );
 
-  // Financial previews (UX only — server recalculates)
-  const previewCash =
-    !isNaN(contractValueNum) && contractValueNum > 0
-      ? calculateCashValue(paymentMethod, contractValueNum, downPaymentNum)
-      : null;
-
-  const previewNet =
-    !isNaN(contractValueNum) && contractValueNum > 0
-      ? paymentMethod === "card" && rateData
-        ? calculateNetValue("card", contractValueNum, rateData.rate_percent)
-        : paymentMethod !== "card"
-          ? calculateNetValue(paymentMethod, contractValueNum, null)
-          : null
-      : null;
-
-  const previewFuture =
-    previewCash !== null && !isNaN(contractValueNum)
-      ? calculateFutureRevenue(contractValueNum, previewCash)
-      : null;
-
-  // ─── Step validation ────────────────────────────────────────────────────────
+  // ─── Step validation ─────────────────────────────────────────────────────────
 
   const canAdvance = (): boolean => {
     switch (step) {
@@ -235,7 +221,7 @@ export function RegisterSaleModal({
     }
   };
 
-  // ─── Mutations ──────────────────────────────────────────────────────────────
+  // ─── Mutations ───────────────────────────────────────────────────────────────
 
   const createSale = api.sales.createSale.useMutation({
     onSuccess: async () => {
@@ -256,7 +242,7 @@ export function RegisterSaleModal({
 
   const mutation = mode === "convert" ? convertToSale : createSale;
 
-  // ─── Submit ─────────────────────────────────────────────────────────────────
+  // ─── Submit ──────────────────────────────────────────────────────────────────
 
   const onSubmit = (values: FormValues) => {
     const contractValue = parseFloat(values.contract_value);
@@ -299,11 +285,11 @@ export function RegisterSaleModal({
     }
   };
 
-  // ─── Render per step ─────────────────────────────────────────────────────────
+  // ─── Step content ─────────────────────────────────────────────────────────────
 
   const renderStep = () => {
     switch (step) {
-      // ── Step 1: Produto ────────────────────────────────────────────────────
+      // ── Step 1: Produto ──────────────────────────────────────────────────────
       case 1:
         return (
           <div className="space-y-4">
@@ -359,7 +345,7 @@ export function RegisterSaleModal({
           </div>
         );
 
-      // ── Step 2: Cliente ────────────────────────────────────────────────────
+      // ── Step 2: Cliente ──────────────────────────────────────────────────────
       case 2:
         return (
           <div className="space-y-4">
@@ -409,7 +395,7 @@ export function RegisterSaleModal({
           </div>
         );
 
-      // ── Step 3: Venda ──────────────────────────────────────────────────────
+      // ── Step 3: Venda ────────────────────────────────────────────────────────
       case 3:
         return (
           <div className="space-y-4">
@@ -449,7 +435,6 @@ export function RegisterSaleModal({
                 <Input id="sale_date" type="date" {...register("sale_date")} />
               </div>
 
-              {/* Origem — oculta em conversão */}
               {mode !== "convert" && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">Origem *</Label>
@@ -472,7 +457,6 @@ export function RegisterSaleModal({
               )}
             </div>
 
-            {/* SDR */}
             {sdrs.length > 0 && (
               <div className="space-y-1.5">
                 <Label className="text-xs">SDR (opcional)</Label>
@@ -495,7 +479,6 @@ export function RegisterSaleModal({
               </div>
             )}
 
-            {/* Venda recuperada */}
             <div className="flex items-center gap-2">
               <input
                 id="is_recovered"
@@ -510,11 +493,10 @@ export function RegisterSaleModal({
           </div>
         );
 
-      // ── Step 4: Pagamento ──────────────────────────────────────────────────
+      // ── Step 4: Pagamento ────────────────────────────────────────────────────
       case 4:
         return (
           <div className="space-y-4">
-            {/* Forma de pagamento */}
             <div className="space-y-1.5">
               <Label className="text-xs">Forma de Pagamento *</Label>
               <div className="flex gap-1.5">
@@ -541,7 +523,6 @@ export function RegisterSaleModal({
               </div>
             </div>
 
-            {/* Cartão: gateway + parcelas */}
             {paymentMethod === "card" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -588,7 +569,6 @@ export function RegisterSaleModal({
               </div>
             )}
 
-            {/* Entrada: cartão ou boleto */}
             {(paymentMethod === "card" || paymentMethod === "boleto") && (
               <div className="space-y-1.5">
                 <Label htmlFor="down_payment" className="text-xs">
@@ -610,13 +590,13 @@ export function RegisterSaleModal({
                 />
                 {downPaymentNum > contractValueNum && contractValueNum > 0 && (
                   <p className="text-xs text-destructive">
-                    A entrada não pode ser maior que o valor do contrato ({formatCurrencyDecimal(contractValueNum)}).
+                    A entrada não pode ser maior que o valor do contrato (
+                    {formatCurrencyDecimal(contractValueNum)}).
                   </p>
                 )}
               </div>
             )}
 
-            {/* Preview financeiro */}
             {!isNaN(contractValueNum) && contractValueNum > 0 && (
               <div className="rounded-lg bg-muted/50 border p-4 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -632,9 +612,7 @@ export function RegisterSaleModal({
                   <div className="space-y-0.5">
                     <p className="text-xs text-muted-foreground">Caixa (entrada)</p>
                     <p className="font-semibold text-sm">
-                      {previewCash !== null
-                        ? formatCurrencyDecimal(previewCash)
-                        : "—"}
+                      {previewCash !== null ? formatCurrencyDecimal(previewCash) : "—"}
                     </p>
                   </div>
                   <div className="space-y-0.5">
@@ -659,7 +637,6 @@ export function RegisterSaleModal({
               </div>
             )}
 
-            {/* Resumo da venda */}
             {selectedProduct && (
               <div className="rounded-lg border border-dashed p-3 text-xs space-y-1 text-muted-foreground">
                 <p className="font-medium text-foreground">Resumo</p>
@@ -683,97 +660,85 @@ export function RegisterSaleModal({
     }
   };
 
-  // ─── Modal render ─────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4">
-      <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative z-10 bg-background ring-1 ring-foreground/10 rounded-xl w-full max-w-xl max-h-[calc(100vh-4rem)] overflow-y-auto shadow-md">
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold">
-              {mode === "convert" ? "Converter Avanço em Venda" : "Registrar Venda"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {mode === "convert"
-                ? "Preencha os dados da venda gerada pelo avanço."
-                : "Registre uma nova venda."}
-            </p>
-          </div>
+    <FormModal
+      open
+      onClose={onClose}
+      title={mode === "convert" ? "Converter Avanço em Venda" : "Registrar Venda"}
+      subtitle={
+        mode === "convert"
+          ? "Preencha os dados da venda gerada pelo avanço."
+          : "Registre uma nova venda."
+      }
+    >
+      <StepIndicator current={step} />
 
-          {/* Step indicator */}
-          <StepIndicator current={step} />
+      <form onSubmit={(e) => e.preventDefault()}>
+        {renderStep()}
 
-          {/* Step content — form sem onSubmit para evitar submit acidental via Enter ou troca de botão */}
-          <form onSubmit={(e) => e.preventDefault()}>
-            {renderStep()}
+        {mutation.error && (
+          <p className="text-xs text-destructive mt-4">{mutation.error.message}</p>
+        )}
 
-            {/* Error */}
-            {mutation.error && (
-              <p className="text-xs text-destructive mt-4">
-                {mutation.error.message}
-              </p>
-            )}
+        <div className="flex gap-2 mt-6">
+          {step > 1 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={mutation.isPending}
+            >
+              Voltar
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={onClose}
+              disabled={mutation.isPending}
+            >
+              Cancelar
+            </Button>
+          )}
 
-            {/* Navigation */}
-            <div className="flex gap-2 mt-6">
-              {step > 1 ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setStep((s) => s - 1)}
-                  disabled={mutation.isPending}
-                >
-                  Voltar
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={onClose}
-                  disabled={mutation.isPending}
-                >
-                  Cancelar
-                </Button>
-              )}
-
-              {step < 4 ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => canAdvance() && setStep((s) => s + 1)}
-                  disabled={!canAdvance()}
-                >
-                  Próximo
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => handleSubmit(onSubmit)()}
-                  disabled={!canAdvance() || isSubmitting || mutation.isPending || (downPaymentNum > contractValueNum && contractValueNum > 0)}
-                >
-                  {mutation.isPending
-                    ? "Salvando..."
-                    : mode === "convert"
-                      ? "Converter em Venda"
-                      : "Registrar Venda"}
-                </Button>
-              )}
-            </div>
-          </form>
+          {step < 4 ? (
+            <Button
+              type="button"
+              size="sm"
+              className="flex-1"
+              onClick={() => canAdvance() && setStep((s) => s + 1)}
+              disabled={!canAdvance()}
+            >
+              Próximo
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="flex-1"
+              onClick={() => handleSubmit(onSubmit)()}
+              disabled={
+                !canAdvance() ||
+                isSubmitting ||
+                mutation.isPending ||
+                (downPaymentNum > contractValueNum && contractValueNum > 0)
+              }
+            >
+              {mutation.isPending
+                ? "Salvando..."
+                : mode === "convert"
+                  ? "Converter em Venda"
+                  : "Registrar Venda"}
+            </Button>
+          )}
         </div>
-      </div>
-    </div>
+      </form>
+    </FormModal>
   );
 }

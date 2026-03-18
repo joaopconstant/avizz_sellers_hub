@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { parseDateStringUTC } from "@/lib/date-utils";
+import { dn } from "@/lib/decimal-utils";
 import {
   closerProcedure,
   createTRPCRouter,
@@ -10,6 +12,11 @@ import {
   createSaleInputSchema,
   computeFinancials,
 } from "@/server/routers/sales";
+import {
+  getCompanyId,
+  resolveTargetUserId,
+  assertOwnerOrAdminHead,
+} from "@/server/helpers/router-helpers";
 
 // ─── Input schemas ────────────────────────────────────────────────────────────
 
@@ -38,24 +45,13 @@ export const advancesRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: session.user.id },
-        select: { company_id: true },
-      });
+      const company_id = await getCompanyId(db, session.user.id);
 
-      let deadline: Date | null = null;
-      if (input.deadline) {
-        const [y, m, d] = input.deadline.split("-").map(Number) as [
-          number,
-          number,
-          number,
-        ];
-        deadline = new Date(Date.UTC(y, m - 1, d));
-      }
+      const deadline = input.deadline ? parseDateStringUTC(input.deadline) : null;
 
       return db.advance.create({
         data: {
-          company_id: user.company_id,
+          company_id,
           closer_id: session.user.id,
           sdr_id: input.sdr_id ?? null,
           report_id: input.report_id ?? null,
@@ -85,13 +81,11 @@ export const advancesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      let targetUserId = session.user.id;
-      if (input.userId && input.userId !== session.user.id) {
-        if (!["admin", "head"].includes(session.user.role)) {
-          throw new TRPCError({ code: "FORBIDDEN" });
-        }
-        targetUserId = input.userId;
-      }
+      const targetUserId = resolveTargetUserId(
+        session.user.id,
+        session.user.role,
+        input.userId,
+      );
 
       const isConvertedFilter =
         input.status === "all"
@@ -128,7 +122,7 @@ export const advancesRouter = createTRPCRouter({
 
       return advances.map((a) => ({
         ...a,
-        estimated_value: Number(a.estimated_value),
+        estimated_value: dn(a.estimated_value),
         deadline: a.deadline ? a.deadline.toISOString().slice(0, 10) : null,
       }));
     }),
@@ -157,18 +151,11 @@ export const advancesRouter = createTRPCRouter({
         },
       });
 
-      const isOwner =
-        advance.closer_id === session.user.id ||
-        advance.sdr_id === session.user.id;
-      const isAdminOrHead = ["admin", "head"].includes(session.user.role);
-
-      if (!isOwner && !isAdminOrHead) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertOwnerOrAdminHead(session.user.id, session.user.role, advance.closer_id, advance.sdr_id);
 
       return {
         ...advance,
-        estimated_value: Number(advance.estimated_value),
+        estimated_value: dn(advance.estimated_value),
         deadline: advance.deadline
           ? advance.deadline.toISOString().slice(0, 10)
           : null,
@@ -178,7 +165,7 @@ export const advancesRouter = createTRPCRouter({
               sale_date: advance.convertedSale.sale_date
                 .toISOString()
                 .slice(0, 10),
-              cash_value: Number(advance.convertedSale.cash_value),
+              cash_value: dn(advance.convertedSale.cash_value),
             }
           : null,
       };
@@ -209,22 +196,9 @@ export const advancesRouter = createTRPCRouter({
         });
       }
 
-      const isOwner = advance.closer_id === session.user.id;
-      const isAdminOrHead = ["admin", "head"].includes(session.user.role);
+      assertOwnerOrAdminHead(session.user.id, session.user.role, advance.closer_id);
 
-      if (!isOwner && !isAdminOrHead) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
-
-      let deadline: Date | null = null;
-      if (input.data.deadline) {
-        const [y, m, d] = input.data.deadline.split("-").map(Number) as [
-          number,
-          number,
-          number,
-        ];
-        deadline = new Date(Date.UTC(y, m - 1, d));
-      }
+      const deadline = input.data.deadline ? parseDateStringUTC(input.data.deadline) : null;
 
       return db.advance.update({
         where: { id: input.id },
@@ -262,12 +236,7 @@ export const advancesRouter = createTRPCRouter({
         });
       }
 
-      const isOwner = advance.closer_id === session.user.id;
-      const isAdminOrHead = ["admin", "head"].includes(session.user.role);
-
-      if (!isOwner && !isAdminOrHead) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertOwnerOrAdminHead(session.user.id, session.user.role, advance.closer_id);
 
       await db.advance.delete({ where: { id: input.id } });
       return { success: true };
@@ -307,12 +276,7 @@ export const advancesRouter = createTRPCRouter({
           });
         }
 
-        const isOwner = advance.closer_id === session.user.id;
-        const isAdminOrHead = ["admin", "head"].includes(session.user.role);
-
-        if (!isOwner && !isAdminOrHead) {
-          throw new TRPCError({ code: "FORBIDDEN" });
-        }
+        assertOwnerOrAdminHead(session.user.id, session.user.role, advance.closer_id);
 
         // 2–4. Validar produto, buscar taxa e calcular financeiros (RN-06, RN-09)
         const financials = await computeFinancials(tx, input.sale);

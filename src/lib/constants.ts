@@ -22,3 +22,16 @@ export const SALE_ORIGIN_OPTIONS = [
   { value: "referral", label: "Indicação" },
   { value: "outbound", label: "Outbound" },
 ] as const;
+
+export const PAYMENT_LABELS: Record<string, string> = {
+  pix: "PIX",
+  card: "Cartão",
+  boleto: "Boleto",
+};
+
+export const ORIGIN_LABELS: Record<string, string> = {
+  organic: "Orgânico",
+  referral: "Indicação",
+  outbound: "Outbound",
+  advance: "Avanço",
+};

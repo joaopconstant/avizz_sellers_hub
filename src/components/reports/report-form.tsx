@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RegisterSaleModal } from "@/components/sales/register-sale-modal";
-import { AdvanceForm } from "@/components/advances/advance-form";
+import { AdvanceModal } from "@/components/advances/AdvanceModal";
 
 // Validação real ocorre no servidor (reportInputSchema no router)
 type FormValues = {
@@ -424,30 +424,12 @@ export function ReportForm({
         />
       )}
 
-      {/* Modal de registro de avanço — fora do form, fixed overlay */}
-      {showAdvanceModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4">
-          <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={() => setShowAdvanceModal(false)}
-          />
-          <div className="relative z-10 bg-background ring-1 ring-foreground/10 rounded-xl w-full max-w-lg max-h-[calc(100vh-4rem)] overflow-y-auto shadow-md">
-            <div className="p-6">
-              <div className="mb-5">
-                <h2 className="text-lg font-semibold">Novo Avanço</h2>
-                <p className="text-sm text-muted-foreground">
-                  Registre um lead em negociação.
-                </p>
-              </div>
-              <AdvanceForm
-                report_id={existingReport?.id}
-                onSuccess={() => setShowAdvanceModal(false)}
-                onCancel={() => setShowAdvanceModal(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de registro de avanço */}
+      <AdvanceModal
+        open={showAdvanceModal}
+        onClose={() => setShowAdvanceModal(false)}
+        report_id={existingReport?.id}
+      />
     </>
   );
 }

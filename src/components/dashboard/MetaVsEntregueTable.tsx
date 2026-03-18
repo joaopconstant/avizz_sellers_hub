@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/formatting";
+import { formatCurrency, goalPctColor } from "@/lib/formatting";
 
 interface UserRow {
   userId: string;
@@ -37,14 +37,10 @@ function PctCell({
       <TableCell className="text-right text-muted-foreground">—</TableCell>
     );
   const pct = Math.round((realized / goal) * 100);
-  const color =
-    pct >= 80
-      ? "text-green-600"
-      : pct >= 50
-        ? "text-amber-500"
-        : "text-red-500";
   return (
-    <TableCell className={`text-right font-medium ${color}`}>{pct}%</TableCell>
+    <TableCell className={`text-right font-medium ${goalPctColor(realized, goal)}`}>
+      {pct}%
+    </TableCell>
   );
 }
 

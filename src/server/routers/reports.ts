@@ -9,11 +9,16 @@ import {
 import { z } from "zod";
 
 import { isPendingDay, isHoliday } from "@/lib/workdays";
+import { parseDateStringUTC } from "@/lib/date-utils";
 import {
   adminOrHeadProcedure,
   createTRPCRouter,
   salesProcedure,
 } from "@/server/trpc";
+import {
+  getCompanyId,
+  resolveTargetUserId,
+} from "@/server/helpers/router-helpers";
 
 const reportInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -48,13 +53,11 @@ export const reportsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      let targetUserId = session.user.id;
-      if (input.userId && input.userId !== session.user.id) {
-        if (!["admin", "head"].includes(session.user.role)) {
-          throw new TRPCError({ code: "FORBIDDEN" });
-        }
-        targetUserId = input.userId;
-      }
+      const targetUserId = resolveTargetUserId(
+        session.user.id,
+        session.user.role,
+        input.userId,
+      );
 
       const parts = input.month.split("-").map(Number) as [number, number];
       // Limites UTC para a query — relatórios são salvos como UTC midnight (Date.UTC)
@@ -119,15 +122,11 @@ export const reportsRouter = createTRPCRouter({
       const { session, db } = ctx;
       const userId = session.user.id;
 
-      const parts = input.date.split("-").map(Number) as [
-        number,
-        number,
-        number,
-      ];
+      const parts = input.date.split("-").map(Number) as [number, number, number];
       // Data em horário local — para validações de dia-da-semana e comparação com hoje
       const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
       // Data em UTC midnight — para armazenamento consistente com o restante do sistema
-      const reportDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      const reportDate = parseDateStringUTC(input.date);
 
       const today = startOfDay(new Date());
       if (startOfDay(localDate) > today) {
@@ -146,14 +145,11 @@ export const reportsRouter = createTRPCRouter({
         });
       }
 
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { company_id: true },
-      });
+      const company_id = await getCompanyId(db, userId);
 
       const isDayOff = input.work_location === "day_off";
       const data = {
-        company_id: user.company_id,
+        company_id,
         user_id: userId,
         report_date: reportDate,
         work_location: input.work_location,

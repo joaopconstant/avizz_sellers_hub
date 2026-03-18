@@ -6,11 +6,18 @@ import {
   calculateNetValue,
   calculateFutureRevenue,
 } from "@/lib/financials";
+import { parseDateStringUTC } from "@/lib/date-utils";
+import { d, dn } from "@/lib/decimal-utils";
 import {
   closerProcedure,
   createTRPCRouter,
   protectedProcedure,
 } from "@/server/trpc";
+import {
+  getCompanyId,
+  resolveTargetUserId,
+  assertOwnerOrAdminHead,
+} from "@/server/helpers/router-helpers";
 
 // ─── Shared input schema (also used by advances.convertToSale) ───────────────
 
@@ -108,12 +115,7 @@ export async function computeFinancials(
   );
   const futureRevenue = calculateFutureRevenue(input.contract_value, cashValue);
 
-  const [y, m, d] = input.sale_date.split("-").map(Number) as [
-    number,
-    number,
-    number,
-  ];
-  const saleDate = new Date(Date.UTC(y, m - 1, d));
+  const saleDate = parseDateStringUTC(input.sale_date);
 
   return {
     counts_as_sale: product.counts_as_sale,
@@ -137,16 +139,12 @@ export const salesRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: session.user.id },
-        select: { company_id: true },
-      });
-
+      const company_id = await getCompanyId(db, session.user.id);
       const financials = await computeFinancials(db, input);
 
       return db.sale.create({
         data: {
-          company_id: user.company_id,
+          company_id,
           closer_id: session.user.id,
           sdr_id: input.sdr_id ?? null,
           product_id: input.product_id,
@@ -186,13 +184,11 @@ export const salesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      let targetUserId = session.user.id;
-      if (input.userId && input.userId !== session.user.id) {
-        if (!["admin", "head"].includes(session.user.role)) {
-          throw new TRPCError({ code: "FORBIDDEN" });
-        }
-        targetUserId = input.userId;
-      }
+      const targetUserId = resolveTargetUserId(
+        session.user.id,
+        session.user.role,
+        input.userId,
+      );
 
       const sales = await db.sale.findMany({
         where: {
@@ -222,10 +218,10 @@ export const salesRouter = createTRPCRouter({
       return sales.map((s) => ({
         ...s,
         sale_date: s.sale_date.toISOString().slice(0, 10),
-        contract_value: Number(s.contract_value),
-        cash_value: Number(s.cash_value),
-        net_value: Number(s.net_value),
-        future_revenue: Number(s.future_revenue),
+        contract_value: dn(s.contract_value),
+        cash_value: dn(s.cash_value),
+        net_value: dn(s.net_value),
+        future_revenue: dn(s.future_revenue),
       }));
     }),
 
@@ -247,22 +243,16 @@ export const salesRouter = createTRPCRouter({
         },
       });
 
-      const isOwner =
-        sale.closer_id === session.user.id || sale.sdr_id === session.user.id;
-      const isAdminOrHead = ["admin", "head"].includes(session.user.role);
-
-      if (!isOwner && !isAdminOrHead) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertOwnerOrAdminHead(session.user.id, session.user.role, sale.closer_id, sale.sdr_id);
 
       return {
         ...sale,
         sale_date: sale.sale_date.toISOString().slice(0, 10),
-        contract_value: Number(sale.contract_value),
-        cash_value: Number(sale.cash_value),
-        net_value: Number(sale.net_value),
-        future_revenue: Number(sale.future_revenue),
-        down_payment: sale.down_payment ? Number(sale.down_payment) : null,
+        contract_value: dn(sale.contract_value),
+        cash_value: dn(sale.cash_value),
+        net_value: dn(sale.net_value),
+        future_revenue: dn(sale.future_revenue),
+        down_payment: d(sale.down_payment),
       };
     }),
 
@@ -279,12 +269,7 @@ export const salesRouter = createTRPCRouter({
         select: { closer_id: true },
       });
 
-      const isOwner = sale.closer_id === session.user.id;
-      const isAdminOrHead = ["admin", "head"].includes(session.user.role);
-
-      if (!isOwner && !isAdminOrHead) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertOwnerOrAdminHead(session.user.id, session.user.role, sale.closer_id);
 
       // Bloquear exclusão se vinculada a avanço convertido
       const linkedAdvance = await db.advance.findFirst({
@@ -310,13 +295,10 @@ export const salesRouter = createTRPCRouter({
   listSdrs: closerProcedure.query(async ({ ctx }) => {
     const { session, db } = ctx;
 
-    const user = await db.user.findUniqueOrThrow({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const company_id = await getCompanyId(db, session.user.id);
 
     return db.user.findMany({
-      where: { company_id: user.company_id, role: "sdr", is_active: true },
+      where: { company_id, role: "sdr", is_active: true },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });

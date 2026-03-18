@@ -6,6 +6,8 @@ import { format, startOfMonth, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Spinner } from "@/components/shared/Spinner";
+import { SectionHeader } from "@/components/shared/SectionHeader";
 import { GlobalGoalSection } from "./global-goal-section";
 import { IndividualGoalsSection } from "./individual-goals-section";
 import { AuditLogModal } from "./audit-log-modal";
@@ -119,19 +121,15 @@ export function GoalsClient({ role }: GoalsClientProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Target className="h-4 w-4 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">Gestão de Metas</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {role === "head"
+        <SectionHeader
+          icon={Target}
+          title="Gestão de Metas"
+          subtitle={
+            role === "head"
               ? "Visualização das metas — edição exclusiva do admin"
-              : "Configure as metas globais e individuais da equipe"}
-          </p>
-        </div>
+              : "Configure as metas globais e individuais da equipe"
+          }
+        />
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Month navigator — bordered pill group */}
@@ -175,10 +173,7 @@ export function GoalsClient({ role }: GoalsClientProps) {
       {/* Conteúdo principal */}
       {isLoading ? (
         <div className="rounded-xl border bg-card p-16 text-center">
-          <div className="inline-flex flex-col items-center gap-3">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span className="text-sm text-muted-foreground">Carregando metas...</span>
-          </div>
+          <Spinner label="Carregando metas..." />
         </div>
       ) : (
         <Tabs defaultValue="global" className="space-y-0">

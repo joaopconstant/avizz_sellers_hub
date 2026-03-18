@@ -6,6 +6,7 @@ import {
 } from "@/server/trpc";
 import { startOfMonth } from "date-fns";
 import { getWorkdaysInMonth, isPendingDay } from "@/lib/workdays";
+import { getCompanyId } from "@/server/helpers/router-helpers";
 
 // ─── Input schemas ─────────────────────────────────────────────────────────
 
@@ -220,16 +221,11 @@ export const goalsRouter = createTRPCRouter({
       const { db, session } = ctx;
       const userId = session.user.id;
 
-      // company_id — sistema mono-tenant, pega do usuário logado
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { company_id: true },
-      });
-
+      const company_id = await getCompanyId(db, userId);
       const monthDate = startOfMonth(new Date(input.month));
 
       const existing = await db.goal.findFirst({
-        where: { company_id: user.company_id, month: monthDate },
+        where: { company_id, month: monthDate },
       });
 
       if (existing) {
@@ -257,7 +253,7 @@ export const goalsRouter = createTRPCRouter({
 
       const created = await db.goal.create({
         data: {
-          company_id: user.company_id,
+          company_id,
           month: monthDate,
           cash_goal: input.cash_goal,
           sales_goal: input.sales_goal,
@@ -274,10 +270,7 @@ export const goalsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: session.user.id },
-        select: { company_id: true },
-      });
+      const company_id = await getCompanyId(db, session.user.id);
 
       const existing = await db.individualGoal.findFirst({
         where: { user_id: input.userId, goal_id: input.goalId },
@@ -308,7 +301,7 @@ export const goalsRouter = createTRPCRouter({
       const created = await db.individualGoal.create({
         data: {
           ...data,
-          company_id: user.company_id,
+          company_id,
           user_id: input.userId,
           goal_id: input.goalId,
         },

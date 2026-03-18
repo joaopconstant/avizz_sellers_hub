@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/trpc";
+import { getCompanyId } from "@/server/helpers/router-helpers";
 
 const productUpdateInput = z.object({
   id: z.string(),
@@ -19,13 +20,10 @@ export const productsRouter = createTRPCRouter({
   listActive: protectedProcedure.query(async ({ ctx }) => {
     const { session, db } = ctx;
 
-    const user = await db.user.findUniqueOrThrow({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const company_id = await getCompanyId(db, session.user.id);
 
     return db.product.findMany({
-      where: { company_id: user.company_id, is_active: true },
+      where: { company_id, is_active: true },
       select: {
         id: true,
         name: true,
@@ -41,13 +39,10 @@ export const productsRouter = createTRPCRouter({
   listAll: adminProcedure.query(async ({ ctx }) => {
     const { session, db } = ctx;
 
-    const user = await db.user.findUniqueOrThrow({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const company_id = await getCompanyId(db, session.user.id);
 
     return db.product.findMany({
-      where: { company_id: user.company_id },
+      where: { company_id },
       select: {
         id: true,
         name: true,
@@ -77,14 +72,11 @@ export const productsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { session, db } = ctx;
 
-      const user = await db.user.findUniqueOrThrow({
-        where: { id: session.user.id },
-        select: { company_id: true },
-      });
+      const company_id = await getCompanyId(db, session.user.id);
 
       return db.product.create({
         data: {
-          company_id: user.company_id,
+          company_id,
           name: input.name,
           description: input.description ?? null,
           is_active: input.is_active,
