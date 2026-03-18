@@ -261,7 +261,9 @@ export function RegisterSaleModal({
   const onSubmit = (values: FormValues) => {
     const contractValue = parseFloat(values.contract_value);
     const contractMonths = parseInt(values.contract_months, 10);
-    const downPayment = parseFloat(values.down_payment) || undefined;
+    const downPaymentRaw = parseFloat(values.down_payment);
+    const downPayment = isNaN(downPaymentRaw) ? undefined : downPaymentRaw || undefined;
+    if (downPayment !== undefined && downPayment > contractValue) return;
     const installments = values.installments
       ? parseInt(values.installments, 10)
       : undefined;
@@ -604,7 +606,13 @@ export function RegisterSaleModal({
                   step={0.01}
                   placeholder="0,00"
                   {...register("down_payment")}
+                  max={!isNaN(contractValueNum) && contractValueNum > 0 ? contractValueNum : undefined}
                 />
+                {downPaymentNum > contractValueNum && contractValueNum > 0 && (
+                  <p className="text-xs text-destructive">
+                    A entrada não pode ser maior que o valor do contrato ({formatCurrencyDecimal(contractValueNum)}).
+                  </p>
+                )}
               </div>
             )}
 
@@ -661,7 +669,9 @@ export function RegisterSaleModal({
                 </p>
                 <p>
                   Contrato: {watch("contract_months")} meses ·{" "}
-                  {watch("sale_date")}
+                  {watch("sale_date")
+                    ? format(new Date(watch("sale_date") + "T00:00:00"), "dd/MM/yy")
+                    : ""}
                 </p>
               </div>
             )}
@@ -751,7 +761,7 @@ export function RegisterSaleModal({
                   size="sm"
                   className="flex-1"
                   onClick={() => handleSubmit(onSubmit)()}
-                  disabled={!canAdvance() || isSubmitting || mutation.isPending}
+                  disabled={!canAdvance() || isSubmitting || mutation.isPending || (downPaymentNum > contractValueNum && contractValueNum > 0)}
                 >
                   {mutation.isPending
                     ? "Salvando..."

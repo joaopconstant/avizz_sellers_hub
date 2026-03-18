@@ -21,5 +21,4 @@ export const SALE_ORIGIN_OPTIONS = [
   { value: "organic", label: "Orgânico" },
   { value: "referral", label: "Indicação" },
   { value: "outbound", label: "Outbound" },
-  { value: "advance", label: "Avanço" },
 ] as const;

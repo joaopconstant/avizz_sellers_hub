@@ -41,6 +41,15 @@ export const createSaleInputSchema = z
         "Gateway e número de parcelas são obrigatórios para pagamento com cartão.",
       path: ["gateway_id"],
     },
+  )
+  .refine(
+    (data) =>
+      data.down_payment === undefined ||
+      data.down_payment <= data.contract_value,
+    {
+      message: "O valor de entrada não pode ser maior que o valor do contrato.",
+      path: ["down_payment"],
+    },
   );
 
 // ─── Shared helper (also used by advances.convertToSale inside $transaction) ──

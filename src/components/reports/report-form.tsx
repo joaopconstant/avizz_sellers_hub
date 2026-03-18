@@ -136,25 +136,44 @@ export function ReportForm({
     },
   });
 
-  // Reset form when date changes
+  // Reset to blank defaults immediately when date changes (before new data arrives)
   useEffect(() => {
     reset({
-      work_location:
-        (existingReport?.work_location as FormValues["work_location"]) ??
-        "office",
-      calls_total: existingReport?.calls_total ?? undefined,
-      calls_answered: existingReport?.calls_answered ?? undefined,
-      meetings_scheduled: existingReport?.meetings_scheduled ?? undefined,
-      meetings_held: existingReport?.meetings_held ?? undefined,
-      crm_activities: existingReport?.crm_activities ?? undefined,
-      bot_conversations: existingReport?.bot_conversations ?? undefined,
-      reschedulings: existingReport?.reschedulings ?? undefined,
-      calls_done: existingReport?.calls_done ?? undefined,
-      closer_no_shows: existingReport?.closer_no_shows ?? undefined,
-      disqualified: existingReport?.disqualified ?? undefined,
-      crm_updated: existingReport?.crm_updated ?? false,
+      work_location: "office",
+      calls_total: undefined,
+      calls_answered: undefined,
+      meetings_scheduled: undefined,
+      meetings_held: undefined,
+      crm_activities: undefined,
+      bot_conversations: undefined,
+      reschedulings: undefined,
+      calls_done: undefined,
+      closer_no_shows: undefined,
+      disqualified: undefined,
+      crm_updated: false,
     });
-  }, [date, existingReport, reset]);
+  }, [date, reset]);
+
+  // Fill form with existing report data once the query resolves
+  useEffect(() => {
+    if (!existingReport) return;
+    reset({
+      work_location:
+        (existingReport.work_location as FormValues["work_location"]) ??
+        "office",
+      calls_total: existingReport.calls_total ?? undefined,
+      calls_answered: existingReport.calls_answered ?? undefined,
+      meetings_scheduled: existingReport.meetings_scheduled ?? undefined,
+      meetings_held: existingReport.meetings_held ?? undefined,
+      crm_activities: existingReport.crm_activities ?? undefined,
+      bot_conversations: existingReport.bot_conversations ?? undefined,
+      reschedulings: existingReport.reschedulings ?? undefined,
+      calls_done: existingReport.calls_done ?? undefined,
+      closer_no_shows: existingReport.closer_no_shows ?? undefined,
+      disqualified: existingReport.disqualified ?? undefined,
+      crm_updated: existingReport.crm_updated ?? false,
+    });
+  }, [existingReport, reset]);
 
   const upsert = api.reports.upsertReport.useMutation({
     onSuccess: async () => {

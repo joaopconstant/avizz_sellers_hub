@@ -24,6 +24,61 @@ interface IndividualGoalsSectionProps {
   onSaved: () => void;
 }
 
+function fmtRate(v: number | null): string {
+  return v === null ? "—" : (v * 100).toFixed(1) + "%";
+}
+
+/** Cascade info for a Closer row */
+function CloserCascade({ ig }: { ig: IndividualGoalItem }) {
+  const salesGoal = ig.sales_goal;
+  const rateClose = ig.rate_close;
+  const rateNoshow = ig.rate_noshow_max;
+
+  if (salesGoal === null || rateClose === null || rateClose === 0) return null;
+
+  // reuniões necessárias = Meta Vendas / Taxa de Conversão
+  const meetingsNeeded = Math.ceil(salesGoal / rateClose);
+  // buffer no-show: reuniões necessárias / (1 - taxa no-show máx)
+  const bufferNoShow =
+    rateNoshow !== null && rateNoshow < 1
+      ? Math.ceil(meetingsNeeded / (1 - rateNoshow))
+      : null;
+
+  return (
+    <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+      <p>
+        {salesGoal} vendas → {meetingsNeeded} reuniões necessárias
+        {bufferNoShow !== null && ` → ${bufferNoShow} c/ buffer no-show`}
+      </p>
+    </div>
+  );
+}
+
+/** Cascade info for an SDR row */
+function SdrCascade({ ig }: { ig: IndividualGoalItem }) {
+  const rateAnswer = ig.rate_answer;
+  const rateSchedule = ig.rate_schedule;
+
+  if (rateAnswer === null && rateSchedule === null) return null;
+
+  const answered =
+    rateAnswer !== null ? Math.round(100 * rateAnswer) : null;
+  const scheduled =
+    rateSchedule !== null && rateAnswer !== null
+      ? Math.round(100 * rateAnswer * rateSchedule)
+      : rateSchedule !== null
+        ? Math.round(100 * rateSchedule)
+        : null;
+
+  return (
+    <div className="text-xs text-muted-foreground mt-1">
+      Para cada 100 ligações →{" "}
+      {answered !== null ? `${answered} atendidas` : "—"}
+      {scheduled !== null ? ` → ${scheduled} agendamentos` : ""}
+    </div>
+  );
+}
+
 export function IndividualGoalsSection({
   goalId,
   individualGoals,
@@ -58,16 +113,30 @@ export function IndividualGoalsSection({
               <TableHead className="text-right font-semibold">
                 No-Show Máx.
               </TableHead>
+              <TableHead className="text-right font-semibold">
+                Conversão / Atend.
+              </TableHead>
+              <TableHead className="text-right font-semibold">
+                Agend.
+              </TableHead>
               {isAdmin && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {individualGoals.map((ig) => (
-              <TableRow key={ig.id} className="group">
+              <TableRow key={ig.id} className="group align-top">
                 <TableCell>
                   <div className="flex items-center gap-2.5">
                     <UserAvatar name={ig.user.name} role={ig.user.role} />
-                    <span className="font-medium text-sm">{ig.user.name}</span>
+                    <div>
+                      <span className="font-medium text-sm">{ig.user.name}</span>
+                      {ig.user.role === "closer" && (
+                        <CloserCascade ig={ig} />
+                      )}
+                      {ig.user.role === "sdr" && (
+                        <SdrCascade ig={ig} />
+                      )}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -91,6 +160,16 @@ export function IndividualGoalsSection({
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-sm">
                   {formatGoalTarget(ig.rate_noshow_max, "rate")}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-sm">
+                  {ig.user.role === "closer"
+                    ? fmtRate(ig.rate_close)
+                    : ig.user.role === "sdr"
+                      ? fmtRate(ig.rate_answer)
+                      : "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-sm">
+                  {ig.user.role === "sdr" ? fmtRate(ig.rate_schedule) : "—"}
                 </TableCell>
                 {isAdmin && (
                   <TableCell className="text-right">

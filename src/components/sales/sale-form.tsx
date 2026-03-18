@@ -175,6 +175,7 @@ export function SaleForm({
 
     if (isNaN(contractValue) || contractValue <= 0) return;
     if (isNaN(contractMonths) || contractMonths < 1) return;
+    if (downPayment !== undefined && downPayment > contractValue) return;
 
     const salePayload = {
       product_id: values.product_id,
@@ -352,6 +353,7 @@ export function SaleForm({
               step={0.01}
               placeholder="0,00"
               {...register("down_payment")}
+              max={!isNaN(contractValueNum) && contractValueNum > 0 ? contractValueNum : undefined}
             />
           </div>
         )}

@@ -137,6 +137,15 @@ export const reportsRouter = createTRPCRouter({
         });
       }
 
+      const role = session.user.role;
+      const isPastDay = startOfDay(localDate) < today;
+      if (isPastDay && (role === "sdr" || role === "closer")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "SDRs e Closers não podem editar relatórios de dias anteriores.",
+        });
+      }
+
       const user = await db.user.findUniqueOrThrow({
         where: { id: userId },
         select: { company_id: true },

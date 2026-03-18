@@ -226,6 +226,52 @@ export function IndividualGoalModal({
             </div>
           )}
 
+          {/* ── Cascata calculada ──────────────────────────────────────── */}
+          {isCloser && (() => {
+            const sg = parseInt(salesGoal);
+            const rc = parseFloat(rateClose);
+            const rn = parseFloat(rateNoShowMax);
+            if (!isNaN(sg) && sg > 0 && !isNaN(rc) && rc > 0) {
+              const reunioes = Math.ceil(sg / (rc / 100));
+              const comBuffer = !isNaN(rn) && rn < 100
+                ? Math.ceil(reunioes / (1 - rn / 100))
+                : null;
+              return (
+                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs space-y-1">
+                  <p className="font-medium text-muted-foreground">Cascata (estimativa)</p>
+                  <p>Meta vendas: <span className="font-semibold">{sg}</span></p>
+                  <p>→ Reuniões necessárias: <span className="font-semibold">{reunioes}</span></p>
+                  {comBuffer !== null && (
+                    <p>→ Com buffer no-show: <span className="font-semibold">{comBuffer}</span></p>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {isSDR && (() => {
+            const ra = parseFloat(rateAnswer);
+            const rs = parseFloat(rateSchedule);
+            if (!isNaN(ra) && ra > 0) {
+              const atendidas = Math.round(100 * (ra / 100));
+              const agendamentos = !isNaN(rs) && rs > 0
+                ? Math.round(atendidas * (rs / 100))
+                : null;
+              return (
+                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs space-y-1">
+                  <p className="font-medium text-muted-foreground">Cascata (estimativa)</p>
+                  <p>Para cada 100 ligações →</p>
+                  <p>→ Atendidas: <span className="font-semibold">{atendidas}</span></p>
+                  {agendamentos !== null && (
+                    <p>→ Agendamentos: <span className="font-semibold">{agendamentos}</span></p>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex gap-2 pt-2">

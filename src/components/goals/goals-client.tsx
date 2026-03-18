@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GlobalGoalSection } from "./global-goal-section";
 import { IndividualGoalsSection } from "./individual-goals-section";
-import { RatesSection } from "./rates-section";
 import { AuditLogModal } from "./audit-log-modal";
 import { PendingCenter } from "./pending-center";
 import { MonthAccordion } from "./month-accordion";
@@ -196,13 +195,6 @@ export function GoalsClient({ role }: GoalsClientProps) {
                 >
                   Metas Individuais
                 </TabsTrigger>
-                <TabsTrigger
-                  value="rates"
-                  disabled={!data?.goal}
-                  className="rounded-none px-3 pb-3 pt-0 text-sm"
-                >
-                  Taxas
-                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -249,24 +241,6 @@ export function GoalsClient({ role }: GoalsClientProps) {
               )}
             </TabsContent>
 
-            <TabsContent value="rates" className="p-6 space-y-4 mt-0">
-              {data?.goal && (
-                <>
-                  <div>
-                    <p className="text-sm font-semibold">Taxas por Colaborador</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Metas de performance e taxas de conversão individuais
-                    </p>
-                  </div>
-                  <RatesSection
-                    goalId={data.goal.id}
-                    individualGoals={data.individualGoals}
-                    role={role}
-                    onSaved={() => void refetch()}
-                  />
-                </>
-              )}
-            </TabsContent>
           </div>
         </Tabs>
       )}

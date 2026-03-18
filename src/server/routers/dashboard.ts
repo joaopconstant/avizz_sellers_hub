@@ -507,6 +507,37 @@ export const dashboardRouter = createTRPCRouter({
       };
     }),
 
+  // ─── Avanços ativos (na mesa) ───────────────────────────────────────────────
+  getActiveAdvances: dashboardGlobalProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    const advances = await db.advance.findMany({
+      where: { is_converted: false },
+      select: {
+        id: true,
+        lead_name: true,
+        company_name: true,
+        estimated_value: true,
+        lead_score: true,
+        deadline: true,
+        closer: {
+          select: { id: true, name: true, avatar_url: true },
+        },
+      },
+      orderBy: { estimated_value: "desc" },
+    });
+
+    return advances.map((a) => ({
+      id: a.id,
+      lead_name: a.lead_name,
+      company_name: a.company_name,
+      estimated_value: Number(a.estimated_value),
+      lead_score: a.lead_score,
+      deadline: a.deadline ? a.deadline.toISOString().slice(0, 10) : null,
+      closer: a.closer,
+    }));
+  }),
+
   // ─── Insights (admin/head) ──────────────────────────────────────────────────
   getInsights: adminOrHeadProcedure
     .input(rangeInput.optional())

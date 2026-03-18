@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency, formatInteger } from "@/lib/formatting";
+import { cn } from "@/lib/utils";
 
 interface ProjectionBoxesProps {
   cashRealized: number;
@@ -9,19 +10,28 @@ interface ProjectionBoxesProps {
   advancesValue: number;
   workdaysElapsed: number;
   workdaysTotal: number;
+  onNaMesaClick?: () => void;
 }
 
 function KpiBox({
   label,
   value,
   sub,
+  onClick,
 }: {
   label: string;
   value: string;
   sub?: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className={`rounded-lg border p-4 space-y-1`}>
+    <div
+      className={cn(
+        "rounded-lg border p-4 space-y-1",
+        onClick && "cursor-pointer hover:bg-muted/50 transition-colors",
+      )}
+      onClick={onClick}
+    >
       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
         {label}
       </p>
@@ -38,6 +48,7 @@ export function ProjectionBoxes({
   advancesValue,
   workdaysElapsed,
   workdaysTotal,
+  onNaMesaClick,
 }: ProjectionBoxesProps) {
   const dailyRate = workdaysElapsed > 0 ? cashRealized / workdaysElapsed : 0;
   const remaining =
@@ -74,6 +85,7 @@ export function ProjectionBoxes({
         label="Na mesa"
         value={formatCurrency(advancesValue)}
         sub="Avanços em aberto"
+        onClick={onNaMesaClick}
       />
     </div>
   );

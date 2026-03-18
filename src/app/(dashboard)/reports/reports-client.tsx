@@ -92,6 +92,13 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
   // targetRole — simple property read, no memo needed (rule 5.3)
   const targetRole: UserRole = targetUser?.role ?? role;
 
+  // Past-day lock for SDR/Closer (mirrors server-side rule in upsertReport)
+  const isSdrOrCloser = (r: UserRole) => r === "sdr" || r === "closer";
+  const isPastDay = (dateStr: string) => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    return dateStr < today;
+  };
+
   // monthLabel — fast string derivation, no memo needed (rule 5.3)
   const monthLabel = format(
     parseISO(`${currentMonth}-01`),
@@ -168,6 +175,13 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground text-center">
               Selecione um dia no calendário para preencher ou visualizar o relatório.
             </div>
+          ) : isViewingOwn && isSdrOrCloser(role) && isPastDay(selectedDate) && !selectedDay?.report ? (
+            <div className="flex flex-1 items-center justify-center flex-col gap-2 text-center">
+              <p className="text-sm font-medium">Período encerrado</p>
+              <p className="text-xs text-muted-foreground">
+                Não é possível preencher relatórios de dias anteriores.
+              </p>
+            </div>
           ) : selectedDay?.isHoliday && !selectedDay.report ? (
             <div className="flex flex-1 items-center justify-center flex-col gap-2 text-center">
               <p className="text-sm font-medium">Feriado nacional</p>
@@ -187,7 +201,7 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
               date={selectedDate}
               role={targetRole}
               existingReport={selectedDay?.report ?? null}
-              isReadOnly={!isViewingOwn}
+              isReadOnly={!isViewingOwn || (isSdrOrCloser(role) && isPastDay(selectedDate))}
               onSuccess={handleFormSuccessNoop}
             />
           )}

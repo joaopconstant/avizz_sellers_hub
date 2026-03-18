@@ -18,6 +18,7 @@ import { InsightsSection } from "@/components/dashboard/InsightsSection";
 import { InsightModal } from "@/components/dashboard/InsightModal";
 import { ColaboradorModal } from "@/components/dashboard/ColaboradorModal";
 import { TVModeView } from "@/components/dashboard/TVModeView";
+import { NaMesaModal } from "@/components/dashboard/NaMesaModal";
 import type { InsightType } from "@/components/dashboard/types";
 
 const isAdminOrHead = (role: UserRole) => role === "admin" || role === "head";
@@ -37,6 +38,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
   const [funnelUserId, setFunnelUserId] = useState<string | null>(null);
   const [insightType, setInsightType] = useState<InsightType | null>(null);
   const [tvMode, setTvMode] = useState(false);
+  const [naMesaOpen, setNaMesaOpen] = useState(false);
 
   const fromStr = format(dateRange.from, "yyyy-MM-dd");
   const toStr = format(dateRange.to, "yyyy-MM-dd");
@@ -58,6 +60,7 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
     { from: fromStr, to: toStr },
     { enabled: isAdminOrHead(role) },
   );
+  const activeAdvances = api.dashboard.getActiveAdvances.useQuery();
 
   const refetchAll = useCallback(() => {
     void summary.refetch();
@@ -157,30 +160,27 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
         advancesValue={s.advancesValue}
         workdaysElapsed={s.workdaysElapsed}
         workdaysTotal={s.workdaysTotal}
+        onNaMesaClick={() => setNaMesaOpen(true)}
       />
 
-      {/* Row 3: Funil + Meta×Entregue lado a lado (admin/head) ou Funil full width */}
-      {isAdminOrHead(role) ? (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
-          <div className="lg:col-span-2 flex flex-col">
-            <FunnelSection
-              stages={funnel.data}
-              users={funnelUsers}
-              selectedUserId={funnelUserId}
-              onSelectUser={setFunnelUserId}
-            />
-          </div>
-          <div className="lg:col-span-3 flex flex-col">
-            <MetaVsEntregueTable
-              closers={closerRows}
-              sdrs={sdrRows}
-              onSelectUser={setSelectedUser}
-            />
-          </div>
+      {/* Row 3: Funil + Meta×Entregue lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+        <div className="lg:col-span-2 flex flex-col">
+          <FunnelSection
+            stages={funnel.data}
+            users={funnelUsers}
+            selectedUserId={funnelUserId}
+            onSelectUser={setFunnelUserId}
+          />
         </div>
-      ) : (
-        <FunnelSection stages={funnel.data} />
-      )}
+        <div className="lg:col-span-3 flex flex-col">
+          <MetaVsEntregueTable
+            closers={closerRows}
+            sdrs={sdrRows}
+            onSelectUser={isAdminOrHead(role) ? setSelectedUser : undefined}
+          />
+        </div>
+      </div>
 
       {/* Row 4: Rankings com pódio */}
       <RankingsSection
@@ -217,6 +217,12 @@ export function DashboardClient({ role, name }: DashboardClientProps) {
           onRefetch={refetchAll}
         />
       )}
+
+      <NaMesaModal
+        open={naMesaOpen}
+        onClose={() => setNaMesaOpen(false)}
+        advances={activeAdvances.data ?? []}
+      />
     </div>
   );
 }
