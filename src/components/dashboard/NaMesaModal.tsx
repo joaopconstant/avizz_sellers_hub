@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -68,22 +71,18 @@ function CloserAvatar({
 }
 
 export function NaMesaModal({ open, onClose, advances }: NaMesaModalProps) {
-  // Group by closer
-  const byCloser = new Map<
-    string,
-    { closer: ActiveAdvance["closer"]; items: ActiveAdvance[] }
-  >();
-
-  for (const adv of advances) {
-    const entry = byCloser.get(adv.closer.id) ?? {
-      closer: adv.closer,
-      items: [],
-    };
-    entry.items.push(adv);
-    byCloser.set(adv.closer.id, entry);
-  }
-
-  const groups = [...byCloser.values()];
+  const groups = useMemo(() => {
+    const byCloser = new Map<
+      string,
+      { closer: ActiveAdvance["closer"]; items: ActiveAdvance[] }
+    >();
+    for (const adv of advances) {
+      const entry = byCloser.get(adv.closer.id) ?? { closer: adv.closer, items: [] };
+      entry.items.push(adv);
+      byCloser.set(adv.closer.id, entry);
+    }
+    return [...byCloser.values()];
+  }, [advances]);
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
@@ -131,9 +130,7 @@ export function NaMesaModal({ open, onClose, advances }: NaMesaModalProps) {
                         {adv.deadline && (
                           <p className="text-xs text-muted-foreground">
                             Prazo:{" "}
-                            {new Date(adv.deadline + "T00:00:00").toLocaleDateString(
-                              "pt-BR",
-                            )}
+                            {format(parseISO(adv.deadline), "dd/MM/yyyy", { locale: ptBR })}
                           </p>
                         )}
                       </div>

@@ -94,10 +94,8 @@ export function ReportsClient({ role, userId }: ReportsClientProps) {
 
   // Past-day lock for SDR/Closer (mirrors server-side rule in upsertReport)
   const isSdrOrCloser = (r: UserRole) => r === "sdr" || r === "closer";
-  const isPastDay = (dateStr: string) => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    return dateStr < today;
-  };
+  const today = format(new Date(), "yyyy-MM-dd");
+  const isPastDay = (dateStr: string) => dateStr < today;
 
   // monthLabel — fast string derivation, no memo needed (rule 5.3)
   const monthLabel = format(

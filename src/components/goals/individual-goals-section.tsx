@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { IndividualGoalModal, formatGoalTarget } from "./individual-goal-modal";
+import { formatPercent } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 import { UserAvatar, ROLE_COLORS } from "./user-avatar";
 import type { UserRole } from "@/lib/generated/prisma/enums";
@@ -25,7 +26,7 @@ interface IndividualGoalsSectionProps {
 }
 
 function fmtRate(v: number | null): string {
-  return v === null ? "—" : (v * 100).toFixed(1) + "%";
+  return v === null ? "—" : formatPercent(v);
 }
 
 /** Cascade info for a Closer row */
